@@ -65,3 +65,56 @@ function startLink(key) {
   graph.setPending(project(key));
 }
 
+function cancelLink() {
+  pending = null;
+  $('#linkBanner').hidden = true;
+  Reader.setPending(null);
+  graph.setPending(null);
+}
+
+function completeLink(target) {
+  const source = pending;
+  cancelLink();
+  if (source === target) return;
+  toast(Store.addLink(source, target)
+    ? `Linked ${Store.label(source)} ↔ ${Store.label(target)}`
+    : 'Those are already linked');
+}
+
+const linkAction = (key) => (pending ? completeLink(key) : startLink(key));
+
+// `actions` maps a button's data-act to a handler that receives the button's dataset.
+function showPopup(html, rect, actions) {
+  popupEl.innerHTML = html;
+  popupEl.hidden = false;
+  popupEl.onclick = (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (btn) actions[btn.dataset.act](btn.dataset);
+  };
+  const { offsetWidth: w, offsetHeight: h } = popupEl;
+  let y = rect.bottom + 8;
+  if (y + h > innerHeight - 8) y = rect.top - h - 8;
+  popupEl.style.left = `${clamp(rect.left + rect.width / 2 - w / 2, 8, innerWidth - w - 8)}px`;
+  popupEl.style.top = `${Math.max(8, y)}px`;
+}
+
+const hidePopup = () => { popupEl.hidden = true; };
+const pointRect = (x, y) => ({ left: x, right: x, top: y, bottom: y, width: 0, height: 0 });
+
+const swatches = (active) => COLORS.map((c) =>
+  `<button class="swatch${c === active ? ' on' : ''}" data-act="color" data-color="${c}" style="--c:${c}" title="Highlight"></button>`).join('');
+
+function onSelection({ docId, start, end, text, rect }) {
+  const highlight = (color) => {
+    getSelection().removeAllRanges();
+    hidePopup();
+    return Store.addHighlight(docId, start, end, color, text);
+  };
+  showPopup(`
+    <div class="row">${swatches()}</div>
+    <button class="btn primary small wide" data-act="link">⛓ Highlight &amp; ${pending ? 'link here' : 'start link'}</button>`, rect, {
+    color: ({ color }) => highlight(color),
+    link: () => linkAction(`hl:${highlight(COLORS[0]).id}`),
+  });
+}
+
