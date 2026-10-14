@@ -422,3 +422,50 @@ const Reader = (() => {
     });
   }
 
+  function onClick(e) {
+    const pane = e.target.closest('.pane');
+    if (!pane) return;
+    const slot = Number(pane.dataset.slot);
+    const docId = pane.dataset.doc;
+
+    if (e.target.closest('.close-pane')) return close(slot);
+    if (e.target.closest('.link-doc')) return on.onDocLink(docId);
+    if (e.target.closest('.open-original')) return on.onOpenOriginal(docId);
+    if (e.target.closest('.area-tool')) {
+      if (drawing.has(docId)) drawing.delete(docId);
+      else drawing.add(docId);
+      return render();
+    }
+    const chip = e.target.closest('.chip[data-key]');
+    if (chip) return on.onOpenKey(chip.dataset.key);
+
+    if (activeSlot !== slot) {
+      activeSlot = slot;
+      for (const p of panesEl.querySelectorAll('.pane')) p.classList.toggle('active', p === pane && !!slots[1]);
+    }
+    const area = e.target.closest('.area[data-area]');
+    if (area) return on.onHighlightClick(area.dataset.area, area.getBoundingClientRect(), [area.dataset.area]);
+    const span = e.target.closest('.hl');
+    if (span && getSelection().isCollapsed) {
+      on.onHighlightClick(topHighlight(span), span.getBoundingClientRect(), span.dataset.hls.split(' '));
+    }
+  }
+
+  function restartAnimation(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth; // force reflow so the animation plays again
+    el.classList.add(cls);
+  }
+
+  function scrollToHighlight(hlId) {
+    const spans = panesEl.querySelectorAll(`.hl[data-hls~="${hlId}"], .area[data-area="${hlId}"]`);
+    if (!spans.length) return;
+    spans[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    spans.forEach((s) => restartAnimation(s, 'flash'));
+  }
+
+  function setPending(key) {
+    pendingKey = key;
+    render();
+  }
+
