@@ -131,3 +131,46 @@ const Reader = (() => {
     return pane;
   }
 
+  // The formatted document before highlights. Highlight offsets index into its textContent,
+  // so they don't depend on how the document is formatted.
+  const baseCache = new Map();
+  function baseDom(doc) {
+    if (doc.kind === 'pdf' && doc.hasFile) {
+      const status = PdfView.status(doc.id);
+      if (status === 'ready') return PdfView.build(doc.id);
+      if (status === 'idle' || status === 'loading') {
+        PdfView.ensure(doc.id, render);
+        return loadingBody('Loading PDF…');
+      }
+      // original missing or unreadable: show the extracted text instead
+    }
+    if (doc.kind === 'image') return imageDom(doc);
+    let cached = baseCache.get(doc.id);
+    if (cached?.content !== doc.content) {
+      const el = document.createElement('div');
+      if (doc.kind === 'md') {
+        el.className = 'doc-body md';
+        el.innerHTML = Markdown.render(doc.content);
+      } else if (doc.kind === 'pdf') {
+        el.className = 'doc-body pdf';
+        doc.content.split('\f').forEach((page, i) => {
+          const section = document.createElement('section');
+          section.className = 'pdf-page';
+          section.dataset.page = i + 1;
+          for (const para of page.split(/\n{2,}/).filter((p) => p.trim())) {
+            const p = document.createElement('p');
+            p.textContent = Importers.fixAccents(para.replace(/\n/g, ' '));
+            section.append(p, '\n');
+          }
+          el.appendChild(section);
+        });
+      } else {
+        el.className = 'doc-body txt';
+        el.textContent = doc.content;
+      }
+      cached = { content: doc.content, el };
+      baseCache.set(doc.id, cached);
+    }
+    return cached.el.cloneNode(true);
+  }
+
