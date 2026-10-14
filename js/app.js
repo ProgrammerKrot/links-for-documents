@@ -302,3 +302,49 @@ async function addFiles(files) {
   }
 }
 
+function download(name, text) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function initSplitter() {
+  const split = $('#splitter');
+  const panel = $('#graphPanel');
+  panel.style.width = localStorage.getItem('graphWidth') ?? '';
+  split.addEventListener('pointerdown', (e) => {
+    split.setPointerCapture(e.pointerId);
+    document.body.classList.add('resizing');
+    const move = (ev) => { panel.style.width = `${clamp(innerWidth - ev.clientX, 260, innerWidth * 0.7)}px`; };
+    split.addEventListener('pointermove', move);
+    split.addEventListener('pointerup', () => {
+      document.body.classList.remove('resizing');
+      split.removeEventListener('pointermove', move);
+      localStorage.setItem('graphWidth', panel.style.width);
+    }, { once: true });
+  });
+}
+
+function showGraphTip(key, e) {
+  const tip = $('#graphTip');
+  if (!key) {
+    tip.hidden = true;
+    return;
+  }
+  const { kind } = Store.parseKey(key);
+  const item = Store.get(key);
+  const n = Store.linksOf(key).length;
+  const body = kind === 'hl'
+    ? `${highlightPreview(item, 140)}<div class="muted small">in ${escapeHtml(Store.doc(item.docId).name)}</div>`
+    : `<b>${escapeHtml(Store.label(key))}</b>`;
+  const hint = pending ? 'Click to link' : kind === 'topic' ? 'Click for details' : 'Click to open';
+  const kindLabel = item.area ? 'Area' : { doc: 'Document', hl: 'Highlight', topic: 'Topic' }[kind];
+  tip.innerHTML = `<div class="muted small">${kindLabel} · ${n} link${n === 1 ? '' : 's'}</div>${body}<div class="muted small">${hint}</div>`;
+  tip.hidden = false;
+  const r = $('#graphPanel').getBoundingClientRect();
+  tip.style.left = `${Math.min(e.clientX - r.left + 14, r.width - tip.offsetWidth - 8)}px`;
+  tip.style.top = `${e.clientY - r.top + 14}px`;
+}
+
