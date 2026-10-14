@@ -367,3 +367,58 @@ const Reader = (() => {
     sheet.addEventListener('pointercancel', end);
   }
 
+  // Small JPEG of the marked region, cut from the painted page canvas or the image.
+  function thumbnail(sheet, r) {
+    const src = sheet.querySelector('canvas, img');
+    const sw = src?.naturalWidth || src?.width, sh = src?.naturalHeight || src?.height;
+    if (!sw || !sh) return null;
+    const w = r.w * sw, h = r.h * sh;
+    const scale = Math.min(1, 240 / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * scale));
+    c.height = Math.max(1, Math.round(h * scale));
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, c.width, c.height);
+    try {
+      ctx.drawImage(src, r.x * sw, r.y * sh, w, h, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.82);
+    } catch {
+      return null;
+    }
+  }
+
+  const topHighlight = (span) => span.dataset.hls.split(' ').at(-1);
+
+  function offsetIn(container, node, offset) {
+    const r = document.createRange();
+    r.setStart(container, 0);
+    r.setEnd(node, offset);
+    return r.toString().length;
+  }
+
+  function onMouseUp(e) {
+    if (e.button !== 0) return;
+    // let the browser finish updating the selection first
+    setTimeout(() => {
+      const sel = getSelection();
+      if (sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      const anchor = range.commonAncestorContainer;
+      const body = (anchor.nodeType === Node.ELEMENT_NODE ? anchor : anchor.parentElement).closest('.doc-body');
+      if (!body) return;
+      const text = body.textContent;
+      let start = offsetIn(body, range.startContainer, range.startOffset);
+      let end = offsetIn(body, range.endContainer, range.endOffset);
+      while (start < end && /\s/.test(text[start])) start++;
+      while (end > start && /\s/.test(text[end - 1])) end--;
+      if (end === start) return;
+      on.onSelection({
+        docId: body.closest('.pane').dataset.doc,
+        start, end,
+        text: text.slice(start, end),
+        rect: range.getBoundingClientRect(),
+      });
+    });
+  }
+
