@@ -469,3 +469,33 @@ const Reader = (() => {
     render();
   }
 
+  function setHover(key) {
+    hoverKey = key;
+    for (const g of svg.querySelectorAll('.conn')) g.classList.toggle('hot', !!key && (g.dataset.a === key || g.dataset.b === key));
+    on.onHover(key);
+  }
+
+  const markFresh = (linkId) => freshLinks.add(linkId);
+
+  let raf = 0;
+  function scheduleConnectors() {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(drawConnectors);
+  }
+
+  // Vertical position of a linked item; items scrolled out of view are pinned to the pane edge.
+  function anchorY(key, pane) {
+    const { kind, id } = Store.parseKey(key);
+    if (kind === 'doc') {
+      const head = pane.querySelector('.pane-head').getBoundingClientRect();
+      return { y: head.top + head.height / 2, off: false };
+    }
+    const r = pane.querySelector(`.hl[data-hls~="${id}"], .area[data-area="${id}"]`)?.getClientRects()[0];
+    if (!r) return null; // PDF still loading, or the highlight sits in a hidden element
+    const { top, bottom } = pane.querySelector('.pane-scroll').getBoundingClientRect();
+    const y = r.top + r.height / 2;
+    if (y < top) return { y: top + 4, off: true };
+    if (y > bottom) return { y: bottom - 4, off: true };
+    return { y, off: false };
+  }
+
