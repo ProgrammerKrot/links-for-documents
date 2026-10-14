@@ -221,3 +221,65 @@ body.no-library .library { display: none; }
 .lib-list li:hover .icon-btn { display: inline-grid; }
 .lib-list li:hover .count { display: none; }
 
+i[class^="k-"] { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; margin-right: 6px; }
+.lib-list i[class^="k-"], .chip i[class^="k-"] { margin: 0 3px; }
+.k-hl { background: #f2c94c; width: 7px !important; height: 7px !important; }
+.k-topic { background: var(--topic); border-radius: 1px !important; transform: rotate(45deg) scale(.85); }
+.k-link { background: var(--link); height: 2px !important; width: 14px !important; border-radius: 1px !important; vertical-align: middle; }
+.doc-icon { flex: none; display: block; }
+
+/* ============ Workspace & panes ============ */
+.workspace { flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; background: var(--bg); }
+
+.link-banner {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 12px 8px; padding: 10px 14px;
+  background: var(--accent-soft);
+  border-radius: 6px;
+  font-size: 14px;
+  animation: slideDown .18s ease-out;
+}
+.link-banner .btn { margin-left: auto; }
+.link-banner .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--link); animation: ping 1.2s infinite; flex: none; }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(35, 131, 226, .6); } 100% { box-shadow: 0 0 0 10px rgba(35, 131, 226, 0); } }
+@keyframes slideDown { from { transform: translateY(-6px); opacity: 0; } }
+
+.panes { flex: 1; min-height: 0; display: grid; border-top: 1px solid var(--line); }
+.panes.count-1 { grid-template-columns: 1fr; }
+.panes.count-2 { grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr); }
+.gutter { background: var(--bg-side); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+
+.pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--bg); position: relative; }
+.pane.active .pane-head { box-shadow: inset 0 -2px 0 var(--accent); }
+.pane.flash { animation: paneFlash .6s ease-out; }
+@keyframes paneFlash { 0% { box-shadow: inset 0 0 0 2px var(--accent); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
+
+.pane-head {
+  display: flex; align-items: center; gap: 2px;
+  height: 40px; padding: 0 8px 0 12px;
+  flex: none;
+}
+.crumb {
+  display: flex; align-items: center; gap: 6px;
+  flex: 1; min-width: 0;
+  font-size: 14px; color: var(--text);
+}
+.crumb span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.link-doc.pending { color: var(--link); background: var(--accent-soft); animation: ping 1.2s infinite; }
+
+.pane-scroll { flex: 1; overflow-y: auto; }
+
+/* Notion page */
+.page { max-width: 708px; margin: 0 auto; padding: 56px 48px 120px; }
+.page.wide { max-width: 860px; }
+.panes.count-2 .page { padding: 36px 28px 100px; }
+.page-icon { margin-bottom: 10px; }
+.page-icon .doc-icon { width: 64px; height: 64px; }
+.panes.count-2 .page-icon .doc-icon { width: 48px; height: 48px; }
+.page-title {
+  font-size: 40px; line-height: 1.2; font-weight: 700;
+  margin: 0 0 14px; letter-spacing: -.01em;
+  word-break: break-word;
+}
+.panes.count-2 .page-title { font-size: 30px; }
+
