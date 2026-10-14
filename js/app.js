@@ -233,3 +233,72 @@ function ask(title, value = '', { confirm = false } = {}) {
   });
 }
 
+function toast(msg) {
+  const t = Object.assign(document.createElement('div'), { className: 'toast', textContent: msg });
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.classList.add('out'), 2600);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function renderLibrary() {
+  const { docs, topics, highlights, links } = Store.state;
+  const open = new Set(Reader.openDocs());
+  const row = (key, icon, name, count, cls = '') => `
+    <li class="${cls}" data-key="${key}">${icon}<span class="name" title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+      <span class="count">${count || ''}</span>
+      <button class="icon-btn rename" title="Rename">✎</button>
+      <button class="icon-btn delete" title="Delete">×</button></li>`;
+
+  $('#docList').innerHTML = docs.map((d) =>
+    row(`doc:${d.id}`, docIcon(d.kind), d.name, Store.highlightsOf(d.id).length, open.has(d.id) ? 'open' : '')).join('')
+    || '<li class="muted small">No documents yet</li>';
+  $('#topicList').innerHTML = topics.map((t) =>
+    row(`topic:${t.id}`, '<i class="k-topic"></i>', `#${t.name}`, Store.linksOf(`topic:${t.id}`).length)).join('')
+    || '<li class="muted small">No topics yet</li>';
+  $('#stats').textContent = `Workspace  /  ${docs.length} docs · ${highlights.length} highlights · ${links.length} links`;
+  $('#emptyState').hidden = open.size > 0;
+  $('#sampleBtn').hidden = docs.length > 0;
+}
+
+async function onLibraryClick(e) {
+  const li = e.target.closest('li[data-key]');
+  if (!li) return;
+  const key = li.dataset.key;
+  const isDoc = key.startsWith('doc:');
+
+  if (e.target.closest('.delete')) {
+    if (!await ask(`Delete ${Store.label(key)}? Its highlights and links will be removed too.`, '', { confirm: true })) return;
+    if (pending) cancelLink();
+    Store.remove(key);
+  } else if (e.target.closest('.rename')) {
+    const name = await ask(isDoc ? 'Rename document' : 'Rename topic', Store.get(key).name);
+    if (name) Store.rename(key, name);
+  } else if (pending) {
+    completeLink(key);
+  } else if (isDoc) {
+    openKey(key);
+  } else {
+    const r = li.getBoundingClientRect();
+    showTopicPopup(key, pointRect(r.right, r.top));
+  }
+}
+
+async function addFiles(files) {
+  for (const file of files) {
+    try {
+      const { name, kind, content, original } = await Importers.read(file);
+      if (!content && kind !== 'image') {
+        toast(`${file.name}: no text found${kind === 'pdf' ? ' (scanned PDF?)' : ''}`);
+        continue;
+      }
+      const d = Store.addDoc(name, content, kind);
+      if (original) Store.putFile(d.id, original);
+      Reader.open(d.id);
+      toast(`Added ${name}`);
+    } catch (err) {
+      console.error(err);
+      toast(`Could not read ${file.name}: ${err.message}`);
+    }
+  }
+}
+
