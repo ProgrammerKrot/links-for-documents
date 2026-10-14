@@ -169,3 +169,139 @@ class ForceGraph {
     };
   }
 
+  draw(t) {
+    const { ctx, view, dpr } = this;
+    this.readTheme();
+    const theme = this.theme;
+    const px = 1 / Math.max(view.k, 0.6); // keeps strokes readable when zoomed out
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, this.w, this.h);
+    ctx.translate(this.w / 2 + view.x, this.h / 2 + view.y);
+    ctx.scale(view.k, view.k);
+
+    const focus = this.hover ?? this.externalHover;
+    const near = focus && this.neighbors.get(focus);
+    const animating = new Set(this.anims.map((an) => pairKey(an.a, an.b)));
+
+    for (const e of this.edges) {
+      if (e.kind === 'link' && animating.has(pairKey(e.a, e.b))) continue;
+      const p = this.nodes.get(e.a), q = this.nodes.get(e.b);
+      const touches = focus && (e.a === focus || e.b === focus);
+      const dim = focus && !touches;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(q.x, q.y);
+      if (e.kind === 'contains') {
+        ctx.globalAlpha = dim ? 0.08 : 1;
+        ctx.strokeStyle = touches ? theme.edgeHot : theme.edge;
+        ctx.lineWidth = px;
+        ctx.stroke();
+        continue;
+      }
+      ctx.globalAlpha = dim ? 0.08 : touches ? 0.95 : 0.45;
+      ctx.strokeStyle = theme.link;
+      ctx.lineWidth = (touches ? 2.2 : 1.4) * px;
+      ctx.stroke();
+      if (dim) continue;
+      const s = (t / 2200 + e.seed) % 1;
+      ctx.globalAlpha = touches ? 1 : 0.8;
+      ctx.fillStyle = theme.particle;
+      this.dot(p.x + (q.x - p.x) * s, p.y + (q.y - p.y) * s, 1.8 * px);
+    }
+    ctx.globalAlpha = 1;
+
+    // a new link shoots from a to b, then both ends pulse
+    this.anims = this.anims.filter((an) => {
+      const p = this.nodes.get(an.a), q = this.nodes.get(an.b);
+      if (!p || !q) return false;
+      const progress = (t - an.start) / 900;
+      if (progress >= 1) {
+        this.pulses.push({ key: an.a, start: t }, { key: an.b, start: t });
+        return false;
+      }
+      const s = easeOut(Math.max(0, progress));
+      const x = p.x + (q.x - p.x) * s, y = p.y + (q.y - p.y) * s;
+      ctx.save();
+      ctx.shadowColor = ctx.strokeStyle = theme.link;
+      ctx.shadowBlur = 18;
+      ctx.lineWidth = 3 * px;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.fillStyle = theme.particle;
+      this.dot(x, y, 4 * px);
+      ctx.restore();
+      return true;
+    });
+
+    this.pulses = this.pulses.filter((pl) => {
+      const n = this.nodes.get(pl.key);
+      const s = (t - pl.start) / 700;
+      if (!n || s >= 1) return false;
+      ctx.globalAlpha = 1 - s;
+      ctx.strokeStyle = theme.link;
+      ctx.lineWidth = 2 * px;
+      this.ring(n.x, n.y, n.r + 4 + s * 22);
+      return true;
+    });
+
+    for (const n of this.nodes.values()) {
+      const grow = Math.min(1, (t - n.born) / 450);
+      const r = n.r * (easeOut(grow) + Math.sin(grow * Math.PI) * 0.25);
+      ctx.globalAlpha = near && !near.has(n.key) ? 0.15 : 1;
+      if (n.kind === 'doc') {
+        this.drawDoc(n, r, focus, t, px);
+        continue;
+      }
+      ctx.fillStyle = n.color;
+      ctx.beginPath();
+      if (n.shape === 'square') {
+        ctx.rect(n.x - r, n.y - r, r * 2, r * 2);
+      } else if (n.kind === 'topic') {
+        const d = r * 1.2;
+        ctx.moveTo(n.x, n.y - d);
+        ctx.lineTo(n.x + d, n.y);
+        ctx.lineTo(n.x, n.y + d);
+        ctx.lineTo(n.x - d, n.y);
+        ctx.closePath();
+      } else {
+        ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      if (n.key === focus) {
+        ctx.strokeStyle = theme.ring;
+        ctx.lineWidth = 1.5 / view.k;
+        ctx.stroke();
+      }
+      if (this.active.has(n.key)) {
+        ctx.strokeStyle = theme.ring;
+        ctx.lineWidth = 2 * px;
+        this.ring(n.x, n.y, r + 4);
+      }
+      if (this.pending === n.key) {
+        const s = (t % 1200) / 1200;
+        ctx.globalAlpha = 1 - s;
+        ctx.strokeStyle = theme.link;
+        ctx.lineWidth = 2.5 * px;
+        this.ring(n.x, n.y, r + 4 + s * 14);
+      }
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = theme.label;
+    for (const n of this.nodes.values()) {
+      const inFocus = near?.has(n.key);
+      if (near && !inFocus) continue;
+      if (!inFocus && view.k <= (n.kind === 'hl' ? 1.7 : 0.55)) continue;
+      const size = (n.kind === 'hl' ? 10 : 12) / Math.max(view.k, 0.8);
+      ctx.font = `${n.key === focus ? 600 : 400} ${size}px Inter, system-ui, sans-serif`;
+      ctx.globalAlpha = n.kind === 'hl' ? 0.75 : 0.9;
+      const text = n.label.length > 32 ? n.label.slice(0, 30) + '…' : n.label;
+      ctx.fillText(text, n.x, n.y + (n.kind === 'doc' ? n.r * 1.15 + 5 : n.r + 4));
+    }
+    ctx.globalAlpha = 1;
+  }
+
