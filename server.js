@@ -107,3 +107,46 @@ async function handleLinks(req, res) {
   send(res, 405, 'Method not allowed');
 }
 
+function serveStatic(req, res) {
+  const url = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  const file = path.normalize(path.join(ROOT, url === '/' ? 'index.html' : url));
+  if (!file.startsWith(ROOT + path.sep) && file !== ROOT) return send(res, 403, 'Forbidden');
+  fs.readFile(file, (err, data) => {
+    if (err) return send(res, 404, 'Not found');
+    send(res, 200, data, TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream');
+  });
+}
+
+// Open the app in the default browser (used by start.bat / start.sh via --open).
+function openBrowser(url) {
+  const [cmd, args] =
+    process.platform === 'win32' ? ['cmd', ['/c', 'start', '""', url]]
+    : process.platform === 'darwin' ? ['open', [url]]
+    : ['xdg-open', [url]];
+  try {
+    require('child_process').spawn(cmd, args, { stdio: 'ignore', detached: true, windowsVerbatimArguments: true }).unref();
+  } catch {
+    console.log(`Open ${url} in your browser.`);
+  }
+}
+
+const URL_ = `http://localhost:${PORT}`;
+
+http
+  .createServer((req, res) => {
+    if (req.url.split('?')[0] === '/api/links') handleLinks(req, res);
+    else if (req.method === 'GET' || req.method === 'HEAD') serveStatic(req, res);
+    else send(res, 405, 'Method not allowed');
+  })
+  .on('error', (err) => {
+    if (err.code !== 'EADDRINUSE') throw err;
+    // most likely LinksDocs is already running: just show it
+    console.log(`Port ${PORT} is already in use — LinksDocs is probably already running at ${URL_}`);
+    if (OPEN) openBrowser(URL_);
+    process.exitCode = 0;
+  })
+  .listen(PORT, '127.0.0.1', () => {
+    console.log(`LinksDocs on ${URL_}  (links saved to ${LINKS_FILE})`);
+    console.log('Close this window or press Ctrl+C to stop the server.');
+    if (OPEN) openBrowser(URL_);
+  });
