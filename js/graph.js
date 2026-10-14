@@ -334,3 +334,67 @@ class ForceGraph {
     ctx.closePath();
   }
 
+  drawDoc(n, r, focus, t, px) {
+    const { ctx, view, theme } = this;
+    const w = r * 1.7, h = r * 2.2, fold = w * 0.32;
+    const x0 = n.x - w / 2, y0 = n.y - h / 2;
+
+    this.pagePath(x0, y0, w, h, fold);
+    ctx.fillStyle = theme.docFill;
+    ctx.fill();
+    ctx.save();
+    ctx.globalAlpha *= 0.14;
+    ctx.fillStyle = n.color;
+    ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = n.color;
+    ctx.lineWidth = (n.key === focus ? 2.2 : 1.5) * px;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x0 + w - fold, y0);
+    ctx.lineTo(x0 + w - fold, y0 + fold);
+    ctx.lineTo(x0 + w, y0 + fold);
+    ctx.closePath();
+    ctx.fillStyle = n.color;
+    ctx.fill();
+
+    // type badge when there is room, otherwise a few "text lines"
+    if (r * view.k > 9) {
+      ctx.font = `700 ${Math.max(5, r * 0.62)}px Inter, system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(n.badge, n.x, n.y + h * 0.16);
+    } else {
+      ctx.strokeStyle = n.color;
+      ctx.lineWidth = Math.max(0.6, r * 0.12);
+      ctx.lineCap = 'round';
+      for (const [fy, fw] of [[0.45, 0.6], [0.62, 0.6], [0.79, 0.4]]) {
+        ctx.beginPath();
+        ctx.moveTo(x0 + w * 0.2, y0 + h * fy);
+        ctx.lineTo(x0 + w * (0.2 + fw), y0 + h * fy);
+        ctx.stroke();
+      }
+    }
+
+    if (this.active.has(n.key)) {
+      const g = 4 * px + 2;
+      ctx.strokeStyle = theme.ring;
+      ctx.lineWidth = 2 * px;
+      this.pagePath(x0 - g, y0 - g, w + g * 2, h + g * 2, fold + 3);
+      ctx.stroke();
+    }
+    if (this.pending === n.key) {
+      const s = (t % 1200) / 1200;
+      const g = 4 + s * 14;
+      ctx.save();
+      ctx.globalAlpha = 1 - s;
+      ctx.strokeStyle = theme.link;
+      ctx.lineWidth = 2.5 * px;
+      this.pagePath(x0 - g, y0 - g, w + g * 2, h + g * 2, fold + g * 0.6);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
