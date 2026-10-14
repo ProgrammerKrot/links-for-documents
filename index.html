@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinksDocs</title>
+  <script>
+    const theme = localStorage.getItem('theme');
+    if (theme) document.documentElement.dataset.theme = theme;
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="layout">
+    <aside id="library" class="library">
+      <div class="workspace-head">
+        <span class="ws-avatar">L</span>
+        <span class="ws-name">LinksDocs</span>
+      </div>
+      <button id="uploadSide" class="side-row action"><span class="side-ico">↥</span>Upload documents</button>
+      <button id="newTopicBtn" class="side-row action"><span class="side-ico">＋</span>New topic</button>
+
+      <div class="section-label">Documents</div>
+      <ul id="docList" class="lib-list"></ul>
+      <div class="section-label">Topics</div>
+      <ul id="topicList" class="lib-list"></ul>
+    </aside>
+
+    <div class="main-col">
+      <header class="topbar">
+        <button id="toggleLibrary" class="icon-btn" title="Toggle sidebar">☰</button>
+        <span id="stats" class="crumbs"></span>
+        <span id="saveState" class="save-state" hidden></span>
+        <div class="spacer"></div>
+        <button id="uploadBtn" class="btn ghost">Upload</button>
+        <input id="fileInput" type="file" multiple accept=".md,.markdown,.pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.bmp,.avif,.txt,.docx,.html,.htm" hidden>
+        <button id="exportBtn" class="btn ghost" title="Download everything as JSON">Export</button>
+        <button id="importBtn" class="btn ghost" title="Load a JSON export">Import</button>
+        <input id="importInput" type="file" accept=".json" hidden>
+        <button id="themeBtn" class="icon-btn" title="Light / dark">◐</button>
+      </header>
+
+      <div class="main-row">
+        <section id="workspace" class="workspace">
+          <div id="linkBanner" class="link-banner" hidden></div>
+          <div id="panes" class="panes"></div>
+          <svg id="connectors" class="connectors"></svg>
+          <div id="emptyState" class="empty-state">
+            <div class="empty-card">
+              <div class="empty-icon">
+                <svg width="56" height="56" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h6l3 3v10h-9z" fill="none" stroke="currentColor" stroke-width=".8" stroke-linejoin="round"/><path d="M9.5 1.5v3h3" fill="none" stroke="currentColor" stroke-width=".8"/><path d="M5.5 8h5M5.5 10h5M5.5 12h3" stroke="currentColor" stroke-width=".7" stroke-linecap="round"/></svg>
+              </div>
+              <h1>Connect your documents</h1>
+              <p>Upload Markdown or PDF files. Click a document in the graph to open it, open a second one alongside, then select text to highlight and link ideas across them.</p>
+              <div class="row center">
+                <button id="emptyUpload" class="btn primary">Upload documents</button>
+                <button id="sampleBtn" class="btn">Load sample docs</button>
+              </div>
+              <p class="muted small">…or drop files anywhere on the window.</p>
+            </div>
+          </div>
+        </section>
+
+        <div id="splitter" class="splitter" title="Drag to resize"></div>
+
+        <section id="graphPanel" class="graph-panel">
+          <div class="graph-toolbar">
+            <span class="graph-title">Graph view</span>
+            <div class="spacer"></div>
+            <label class="toggle"><input type="checkbox" id="showHighlights" checked> Highlights</label>
+            <button id="fitGraph" class="btn ghost small">Fit</button>
+          </div>
+          <div class="graph-wrap">
+            <canvas id="graph"></canvas>
+          </div>
+          <div id="graphTip" class="graph-tip" hidden></div>
+          <div class="legend">
+            <span><svg class="doc-icon" width="12" height="12" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z" fill="#e16259"/></svg>PDF</span>
+            <span><svg class="doc-icon" width="12" height="12" viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z" fill="#9a6dd7"/></svg>Markdown</span>
+            <span><i class="k-hl"></i>Highlight</span>
+            <span><i class="k-topic"></i>Topic</span>
+            <span><i class="k-link"></i>Link</span>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div id="popup" class="popup" hidden></div>
+  <div id="modal" class="modal" hidden></div>
+  <div id="toasts" class="toasts"></div>
+  <div id="dropOverlay" class="drop-overlay" hidden><div>Drop files to add them</div></div>
+
+  <script src="js/store.js"></script>
+  <script src="js/importers.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/pdfview.js"></script>
+  <script src="js/graph.js"></script>
+  <script src="js/reader.js"></script>
+  <script src="js/samples.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
