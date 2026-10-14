@@ -94,3 +94,64 @@ const PdfView = (() => {
     };
   }
 
+  function template(pages) {
+    const root = document.createElement('div');
+    root.className = 'doc-body pdfview';
+    pages.forEach((p, i) => {
+      const sheet = document.createElement('div');
+      sheet.className = 'pdf-sheet';
+      sheet.dataset.page = i + 1;
+      sheet.style.aspectRatio = `${p.w} / ${p.h}`;
+      const layer = document.createElement('div');
+      layer.className = 'text-layer';
+      for (const it of p.items) {
+        if (it.str) {
+          const span = document.createElement('span');
+          span.textContent = it.str;
+          span.style.cssText =
+            `left:${(it.left / p.w) * 100}%;top:${(it.top / p.h) * 100}%;` +
+            `font-size:calc(var(--k, 1) * ${it.fh.toFixed(2)}px);font-family:${it.family};` +
+            `transform:rotate(${it.angle}rad) scaleX(${it.scaleX.toFixed(4)})`;
+          layer.appendChild(span);
+        }
+        if (it.eol) layer.append('\n');
+      }
+      sheet.appendChild(layer);
+      root.appendChild(sheet);
+    });
+    return root;
+  }
+
+  function build(docId) {
+    const root = docs.get(docId).template.cloneNode(true);
+    for (const sheet of mounted.get(docId) ?? []) {
+      resizeObs.unobserve(sheet);
+      viewObs.unobserve(sheet);
+    }
+    const sheets = [...root.querySelectorAll('.pdf-sheet')];
+    sheets.forEach((sheet, i) => {
+      sheetInfo.set(sheet, { docId, i });
+      const cached = canvases.get(`${docId}:${i}`);
+      if (cached) sheet.prepend(cached.canvas);
+      resizeObs.observe(sheet);
+      viewObs.observe(sheet);
+    });
+    mounted.set(docId, sheets);
+    return root;
+  }
+
+  // Paint a page, or repaint it after a resize (debounced).
+  function schedule(sheet) {
+    const { docId, i } = sheetInfo.get(sheet);
+    const key = `${docId}:${i}`;
+    const width = Math.round(sheet.clientWidth * devicePixelRatio);
+    if (!width) return;
+    const cached = canvases.get(key);
+    if (cached && Math.abs(cached.width - width) < 4) {
+      if (cached.canvas.parentNode !== sheet) sheet.prepend(cached.canvas);
+      return;
+    }
+    clearTimeout(timers.get(key));
+    timers.set(key, setTimeout(() => paint(docId, i, width), cached ? 200 : 0));
+  }
+
