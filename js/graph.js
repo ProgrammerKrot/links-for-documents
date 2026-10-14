@@ -432,3 +432,63 @@ class ForceGraph {
     return best;
   }
 
+  bindEvents() {
+    const c = this.canvas;
+    c.addEventListener('pointerdown', (e) => {
+      this.drag = { node: this.hit(this.toWorld(e)), sx: e.clientX, sy: e.clientY, vx: this.view.x, vy: this.view.y, moved: false };
+      this.viewTarget = null;
+      c.setPointerCapture(e.pointerId);
+    });
+    c.addEventListener('pointermove', (e) => {
+      const p = this.toWorld(e);
+      const drag = this.drag;
+      if (drag) {
+        const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+        drag.moved ||= Math.hypot(dx, dy) > 3;
+        if (!drag.moved) return;
+        if (drag.node) {
+          drag.node.x = p.x;
+          drag.node.y = p.y;
+          this.alpha = Math.max(this.alpha, 0.3);
+        } else {
+          this.view.x = drag.vx + dx;
+          this.view.y = drag.vy + dy;
+        }
+        c.style.cursor = 'grabbing';
+        return;
+      }
+      const node = this.hit(p);
+      this.hover = node?.key ?? null;
+      c.style.cursor = node ? 'pointer' : 'grab';
+      this.onHover(this.hover, e);
+    });
+    c.addEventListener('pointerup', (e) => {
+      if (!this.drag) return; // press started outside the canvas
+      const { node, moved } = this.drag;
+      this.drag = null;
+      c.style.cursor = 'grab';
+      if (node && !moved) this.onNodeClick(node.key, e);
+    });
+    c.addEventListener('pointerleave', () => {
+      if (this.drag) return;
+      this.hover = null;
+      this.onHover(null);
+    });
+    c.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      this.viewTarget = null;
+      const p = this.toWorld(e);
+      const k = clamp(this.view.k * Math.exp(-e.deltaY * 0.0015), 0.15, 4);
+      this.view = { k, x: p.sx - this.w / 2 - p.x * k, y: p.sy - this.h / 2 - p.y * k };
+    }, { passive: false });
+  }
+}
+
+const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+const pairKey = (a, b) => (a < b ? `${a}|${b}` : `${b}|${a}`);
+
+function hash(s) {
+  let h = 0;
+  for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) | 0;
+  return (Math.abs(h) % 1000) / 1000;
+}
