@@ -398,3 +398,37 @@ class ForceGraph {
     }
   }
 
+  resize() {
+    const { width, height } = this.canvas.parentElement.getBoundingClientRect();
+    this.dpr = devicePixelRatio;
+    this.w = width;
+    this.h = height;
+    this.canvas.width = Math.max(1, width * this.dpr);
+    this.canvas.height = Math.max(1, height * this.dpr);
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+  }
+
+  toWorld(e) {
+    const r = this.canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    return {
+      sx, sy,
+      x: (sx - this.w / 2 - this.view.x) / this.view.k,
+      y: (sy - this.h / 2 - this.view.y) / this.view.k,
+    };
+  }
+
+  // Closest node under the pointer; documents use their page shape rather than a circle.
+  hit(p) {
+    let best = null, bestGap = Infinity;
+    for (const n of this.nodes.values()) {
+      const d = n.kind === 'doc'
+        ? Math.max(Math.abs(n.x - p.x) / 0.85, Math.abs(n.y - p.y) / 1.1)
+        : Math.hypot(n.x - p.x, n.y - p.y);
+      const gap = d - n.r - 4 / this.view.k;
+      if (gap < 0 && gap <= bestGap) { best = n; bestGap = gap; }
+    }
+    return best;
+  }
+
