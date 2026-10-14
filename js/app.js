@@ -443,3 +443,36 @@ async function main() {
   $('#fitGraph').onclick = () => graph.fit();
   $('#library').addEventListener('click', onLibraryClick);
 
+  addEventListener('mousedown', (e) => {
+    if (!popupEl.contains(e.target)) hidePopup();
+  });
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !$('#modal').hidden) return;
+    hidePopup();
+    if (pending) cancelLink();
+  });
+
+  initDropZone();
+  // links.tr save indicator
+  const SAVE_TEXT = {
+    saved: ['Saved to links.tr', 'Links are saved to links.tr in the app folder'],
+    saving: ['Saving…', 'Writing links.tr'],
+    error: ['links.tr not saved', 'Could not write links.tr — is server.js running?'],
+    off: ['Browser only', 'Start the app with “node server.js” to save links to links.tr'],
+  };
+  const showSaveState = (st) => {
+    const el = $('#saveState');
+    el.hidden = false;
+    el.className = `save-state ${st}`;
+    [el.textContent, el.title] = SAVE_TEXT[st];
+  };
+  showSaveState(Store.fileStatus);
+  Store.onFileStatus(showSaveState);
+
+  initSplitter();
+  buildGraph();
+  Reader.render();
+  graph.requestFit();
+}
+
+main();
