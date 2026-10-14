@@ -305,3 +305,32 @@ class ForceGraph {
     ctx.globalAlpha = 1;
   }
 
+  dot(x, y, r) {
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, r, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  ring(x, y, r) {
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, r, 0, Math.PI * 2);
+    this.ctx.stroke();
+  }
+
+  // Page outline with a folded top-right corner.
+  pagePath(x0, y0, w, h, fold) {
+    const ctx = this.ctx;
+    const rr = Math.min(w, h) * 0.12;
+    ctx.beginPath();
+    ctx.moveTo(x0 + rr, y0);
+    ctx.lineTo(x0 + w - fold, y0);
+    ctx.lineTo(x0 + w, y0 + fold);
+    ctx.lineTo(x0 + w, y0 + h - rr);
+    ctx.quadraticCurveTo(x0 + w, y0 + h, x0 + w - rr, y0 + h);
+    ctx.lineTo(x0 + rr, y0 + h);
+    ctx.quadraticCurveTo(x0, y0 + h, x0, y0 + h - rr);
+    ctx.lineTo(x0, y0 + rr);
+    ctx.quadraticCurveTo(x0, y0, x0 + rr, y0);
+    ctx.closePath();
+  }
+
