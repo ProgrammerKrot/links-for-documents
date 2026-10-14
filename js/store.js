@@ -106,3 +106,34 @@ const Store = (() => {
     return out;
   }
 
+  function applyLinksFile(data) {
+    const local = new Set(state.docs.map((d) => d.id));
+    for (const d of data.documents ?? []) {
+      const mine = state.docs.find((x) => x.id === d.id);
+      if (mine) mine.name = d.name;
+    }
+    orphans.docs = (data.documents ?? []).filter((d) => !local.has(d.id));
+    state.topics = data.topics ?? [];
+    state.highlights = [];
+    state.links = [];
+    orphans.highlights = data.highlights ?? [];
+    orphans.links = data.links ?? [];
+    adoptOrphans();
+  }
+
+  // Move orphaned highlights/links into the state once everything they point to exists.
+  function adoptOrphans() {
+    const local = new Set(state.docs.map((d) => d.id));
+    orphans.docs = orphans.docs.filter((d) => !local.has(d.id));
+    const keep = [];
+    for (const h of orphans.highlights) (local.has(h.docId) ? state.highlights : keep).push(h);
+    orphans.highlights = keep;
+    const exists = (key) => {
+      const { kind, id } = parseKey(key);
+      return !!state[TABLES[kind]]?.some((x) => x.id === id);
+    };
+    const pending = [];
+    for (const { id, a, b } of orphans.links) (exists(a) && exists(b) ? state.links : pending).push({ id, a, b });
+    orphans.links = pending;
+  }
+
