@@ -335,3 +335,71 @@ i[class^="k-"] { display: inline-block; width: 9px; height: 9px; border-radius: 
 .doc-body.txt { white-space: pre-wrap; }
 .doc-body ::selection { background: rgba(35, 131, 226, .28); }
 
+/* formatted markdown */
+.doc-body.md > :first-child { margin-top: 0; }
+.doc-body.md > .dup-title { display: none; }
+.doc-body.md > .dup-title + * { margin-top: 0; }
+.doc-body.md h1, .doc-body.md h2, .doc-body.md h3, .doc-body.md h4 { font-weight: 600; line-height: 1.3; margin: 1.4em 0 .3em; }
+.doc-body.md h1 { font-size: 1.875em; }
+.doc-body.md h2 { font-size: 1.5em; }
+.doc-body.md h3 { font-size: 1.25em; }
+.doc-body.md p { margin: 0 0 .5em; padding: 3px 2px; }
+.doc-body.md ul, .doc-body.md ol { margin: 0 0 .5em; padding-left: 1.6em; }
+.doc-body.md li { padding: 2px 0; }
+.doc-body.md li.task { list-style: none; margin-left: -1.4em; }
+.doc-body.md blockquote { margin: .4em 0 .8em; padding: 0 14px; border-left: 3px solid currentColor; }
+.doc-body.md blockquote > :last-child { margin-bottom: 0; }
+.doc-body.md code {
+  font: 85%/1.4 var(--mono);
+  color: #eb5757; background: rgba(135, 131, 120, .15);
+  padding: .2em .4em; border-radius: 4px;
+}
+.doc-body.md pre { background: var(--bg-soft); border-radius: 4px; padding: 28px 30px; overflow-x: auto; margin: .4em 0 .8em; }
+.doc-body.md pre code { background: none; color: var(--text); padding: 0; font-size: 85%; }
+.doc-body.md table { border-collapse: collapse; margin: .4em 0 1em; display: block; overflow-x: auto; }
+.doc-body.md th, .doc-body.md td { border: 1px solid var(--line-strong); padding: 7px 9px; text-align: left; }
+.doc-body.md th { background: var(--bg-soft); font-weight: 500; color: var(--text-2); }
+.doc-body.md hr { border: 0; border-top: 1px solid var(--line-strong); margin: 1.2em 0; }
+.doc-body.md a { color: inherit; text-decoration: underline; text-decoration-color: var(--text-3); text-underline-offset: 2px; }
+.doc-body.md img { max-width: 100%; border-radius: 4px; }
+.doc-body.md mark { background: rgba(251, 243, 219, .9); color: inherit; padding: 0 2px; }
+.doc-body.md .wikilink { color: var(--text); border-bottom: 1px solid var(--line-strong); }
+
+/* extracted pdf text (when the original file isn't stored) */
+.pdf-page {
+  background: var(--bg); box-shadow: var(--shadow-sheet); border-radius: 4px;
+  padding: 32px 38px 24px; margin-bottom: 20px; position: relative;
+}
+.pdf-page::after { content: attr(data-page); position: absolute; right: 12px; bottom: 6px; font-size: 11px; color: var(--text-3); }
+.pdf-page p { margin: 0 0 .8em; }
+
+/* real pdf pages: canvas + transparent text layer */
+.doc-body.pdfview {
+  background: var(--bg-page);
+  margin: 0 -28px; padding: 24px 28px 8px;
+  border-radius: 8px;
+}
+.pdf-sheet {
+  position: relative; width: 100%;
+  background: #fff;
+  box-shadow: var(--shadow-sheet);
+  margin-bottom: 20px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pdf-sheet::after {
+  content: attr(data-page);
+  position: absolute; right: 8px; bottom: 6px;
+  font: 11px var(--font); color: rgba(55, 53, 47, .45);
+  pointer-events: none;
+}
+.pdf-sheet canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.text-layer { position: absolute; inset: 0; line-height: 1; text-align: initial; overflow: hidden; }
+.text-layer > span {
+  position: absolute; white-space: pre; color: transparent;
+  transform-origin: 0% 0%; cursor: text;
+}
+.text-layer ::selection { background: rgba(35, 131, 226, .3); color: transparent; }
+.doc-body.doc-loading { min-height: 240px; display: grid; place-items: center; }
+.doc-body.doc-loading::after { content: attr(data-loading); color: var(--text-3); font-size: 14px; }
+
