@@ -235,3 +235,47 @@ const Store = (() => {
   const highlight = (id) => get(`hl:${id}`);
   const topic = (id) => get(`topic:${id}`);
 
+  function label(key) {
+    const item = get(key);
+    switch (parseKey(key).kind) {
+      case 'doc': return item.name;
+      case 'topic': return `#${item.name}`;
+      default: {
+        if (item.area) return `▭ ${item.text}`;
+        const text = Importers.fixAccents(item.text);
+        return `“${text.length > 60 ? text.slice(0, 57) + '…' : text}”`;
+      }
+    }
+  }
+
+  // The document a doc or highlight key belongs to; null for topics.
+  function docOf(key) {
+    const { kind, id } = parseKey(key);
+    if (kind === 'doc') return id;
+    if (kind === 'hl') return highlight(id).docId;
+    return null;
+  }
+
+  const linksOf = (key) => state.links.filter((l) => l.a === key || l.b === key);
+  const linksOfDoc = (docId) => state.links.filter((l) => docOf(l.a) === docId || docOf(l.b) === docId);
+  const other = (link, key) => (link.a === key ? link.b : link.a);
+  const highlightsOf = (docId) => state.highlights.filter((h) => h.docId === docId);
+
+  function addDoc(name, content, kind) {
+    // re-uploading a document that links.tr already knows brings its highlights and links back
+    const known = orphans.docs.find((o) => o.name === name && o.kind === kind);
+    const d = { id: known?.id ?? uid('d'), name, content: content.replace(/\r\n?/g, '\n'), kind };
+    state.docs.push(d);
+    if (known) adoptOrphans();
+    emit('doc:add', { doc: d });
+    return d;
+  }
+
+  // Offsets are positions in the rendered document's text; `text` is that slice.
+  function addHighlight(docId, start, end, color, text) {
+    const h = { id: uid('h'), docId, start, end, text, color };
+    state.highlights.push(h);
+    emit('hl:add', { highlight: h });
+    return h;
+  }
+
