@@ -283,3 +283,55 @@ i[class^="k-"] { display: inline-block; width: 9px; height: 9px; border-radius: 
 }
 .panes.count-2 .page-title { font-size: 30px; }
 
+.props { margin-bottom: 4px; }
+.prop { display: flex; align-items: flex-start; min-height: 34px; }
+.prop-k {
+  width: 160px; flex: none;
+  display: flex; align-items: center; gap: 8px;
+  height: 34px; padding: 0 6px;
+  color: var(--text-2); font-size: 14px;
+}
+.prop-k b { width: 16px; text-align: center; font-weight: 400; color: var(--text-3); }
+.panes.count-2 .prop-k { width: 120px; }
+.prop-v { flex: 1; min-width: 0; min-height: 34px; padding: 6px 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; border-radius: 4px; }
+.prop-empty { color: var(--text-3); }
+.tag {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 6px;
+  border-radius: 3px; font-size: 12px; font-weight: 500;
+  background: color-mix(in srgb, var(--c) 18%, transparent);
+  color: color-mix(in srgb, var(--c) 80%, var(--text));
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  max-width: 100%; height: 24px; padding: 0 6px 0 4px;
+  border: 0; border-radius: 4px; background: transparent; cursor: pointer;
+  font-size: 14px; color: var(--text);
+}
+.chip span { border-bottom: 1px solid var(--line-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip em { font-style: normal; font-size: 11px; color: var(--text-3); }
+.chip:hover { background: var(--bg-hover); }
+.page-divider { height: 1px; background: var(--line); margin: 14px 0 26px; }
+
+/* narrow panes (two documents side by side on a smaller screen) */
+.pane-scroll { container-type: inline-size; }
+@container (max-width: 520px) {
+  .page, .panes.count-2 .page { padding: 24px 18px 80px; }
+  .page-icon .doc-icon, .panes.count-2 .page-icon .doc-icon { width: 36px; height: 36px; }
+  .page-title, .panes.count-2 .page-title { font-size: 24px; margin-bottom: 8px; }
+  .prop-k, .panes.count-2 .prop-k { width: 92px; gap: 4px; font-size: 13px; }
+  .prop-k b { display: none; }
+  .prop-v { padding: 6px 4px; }
+  .doc-body { font-size: 15px; }
+  .doc-body.pdfview { margin: 0 -18px; padding: 14px 12px 4px; border-radius: 0; }
+  .pdf-sheet { margin-bottom: 12px; }
+}
+
+/* ============ Document bodies ============ */
+.doc-body {
+  word-wrap: break-word;
+  font-size: 16px; line-height: 1.6;
+  color: var(--text);
+}
+.doc-body.txt { white-space: pre-wrap; }
+.doc-body ::selection { background: rgba(35, 131, 226, .28); }
+
