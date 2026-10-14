@@ -30,3 +30,46 @@ const Reader = (() => {
     new ResizeObserver(scheduleConnectors).observe(workspace);
   }
 
+  const openDocs = () => slots.filter(Boolean);
+
+  function open(docId) {
+    let slot = slots.indexOf(docId);
+    if (slot >= 0) {
+      activeSlot = slot;
+      render();
+      restartAnimation(panesEl.querySelector(`.pane[data-slot="${slot}"]`), 'flash');
+      return;
+    }
+    slot = slots.indexOf(null);
+    if (slot < 0) slot = 1 - activeSlot; // replace the pane you're not working in
+    slots[slot] = docId;
+    activeSlot = slot;
+    render();
+  }
+
+  function close(slot) {
+    slots[slot] = null;
+    activeSlot = 0;
+    render();
+  }
+
+  function render() {
+    // keep panes left-aligned and drop documents that were deleted
+    slots = [...slots.filter((id) => id && Store.doc(id)), null, null].slice(0, 2);
+
+    const scroll = Object.fromEntries([...panesEl.querySelectorAll('.pane')]
+      .map((p) => [p.dataset.doc, p.querySelector('.pane-scroll').scrollTop]));
+
+    const docs = openDocs();
+    panesEl.className = `panes count-${docs.length}`;
+    panesEl.replaceChildren(...docs.flatMap((docId, i) => {
+      const pane = renderPane(docId, i);
+      return i ? [Object.assign(document.createElement('div'), { className: 'gutter' }), pane] : [pane];
+    }));
+    for (const pane of panesEl.querySelectorAll('.pane')) {
+      pane.querySelector('.pane-scroll').scrollTop = scroll[pane.dataset.doc] ?? 0;
+    }
+    on.onRender();
+    scheduleConnectors();
+  }
+
