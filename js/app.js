@@ -118,3 +118,72 @@ function onSelection({ docId, start, end, text, rect }) {
   });
 }
 
+let lastAreaColor = COLORS[2];
+
+// A rectangle was drawn on a PDF page or an image.
+function onArea({ docId, area, thumb, rect }) {
+  const doc = Store.doc(docId);
+  const caption = doc.kind === 'image' ? `Area of ${doc.name}` : `Page ${area.page + 1} area`;
+  const key = `hl:${Store.addArea(docId, area, lastAreaColor, caption, thumb).id}`;
+  if (pending) return completeLink(key);
+  requestAnimationFrame(() => onHighlightClick(Store.parseKey(key).id, rect, [Store.parseKey(key).id]));
+}
+
+// Preview of a highlight: the cropped image for areas, the quoted text otherwise.
+function highlightPreview(h, max = 160) {
+  if (!h.area) return `<div class="quote" style="--c:${h.color}">${escapeHtml(truncate(hlText(h), max))}</div>`;
+  return `<div class="area-preview" style="--c:${h.color}">
+    ${h.thumb ? `<img src="${h.thumb}" alt="">` : '<div class="no-thumb">▭</div>'}
+    <span>${escapeHtml(h.text)}</span></div>`;
+}
+
+function connectionsHtml(key) {
+  const links = Store.linksOf(key);
+  if (!links.length) return '<div class="muted small">No connections yet</div>';
+  return `<ul class="conn-list">${links.map((l) => {
+    const o = Store.other(l, key);
+    const { kind } = Store.parseKey(o);
+    const where = kind === 'hl' ? ` <span class="muted">in ${escapeHtml(Store.doc(Store.docOf(o)).name)}</span>` : '';
+    return `<li><button class="link-to" data-act="open" data-key="${o}"><i class="k-${kind}"></i>${escapeHtml(Store.label(o))}${where}</button>
+      <button class="icon-btn unlink" data-act="unlink" data-link="${l.id}" title="Remove link">✕</button></li>`;
+  }).join('')}</ul>`;
+}
+
+const connectionActions = {
+  open: ({ key }) => { hidePopup(); openKey(key); },
+  unlink: ({ link }) => { hidePopup(); Store.removeLink(link); },
+};
+
+function onHighlightClick(hlId, rect, overlapping) {
+  const key = `hl:${hlId}`;
+  if (pending) return completeLink(key);
+  const hl = Store.highlight(hlId);
+  showPopup(`
+    ${highlightPreview(hl)}
+    <div class="row">${swatches(hl.color)}</div>
+    <div class="section-label">Connections</div>
+    ${connectionsHtml(key)}
+    <div class="row">
+      <button class="btn primary small" data-act="link">⛓ Link…</button>
+      ${hl.area ? '<button class="btn ghost small" data-act="rename">Rename</button>' : ''}
+      <button class="btn ghost small" data-act="graph">Show in graph</button>
+      <button class="btn danger small" data-act="remove">Delete</button>
+    </div>
+    ${overlapping.length > 1 ? `<div class="muted small">${overlapping.length} highlights overlap here — showing the innermost.</div>` : ''}`, rect, {
+    ...connectionActions,
+    color: ({ color }) => {
+      hidePopup();
+      if (hl.area) lastAreaColor = color;
+      Store.recolor(hlId, color);
+    },
+    link: () => startLink(key),
+    rename: async () => {
+      hidePopup();
+      const name = await ask('Area caption', hl.text);
+      if (name) Store.rename(key, name);
+    },
+    graph: () => { hidePopup(); graph.focusNode(project(key)); },
+    remove: () => { hidePopup(); Store.remove(key); },
+  });
+}
+
