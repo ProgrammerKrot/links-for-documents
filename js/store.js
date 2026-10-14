@@ -332,3 +332,46 @@ const Store = (() => {
     emit('remove', { key });
   }
 
+  function removeLink(id) {
+    state.links = state.links.filter((l) => l.id !== id);
+    emit('link:remove', { id });
+  }
+
+  async function putFile(docId, blob) {
+    await request((await objects('readwrite')).put(blob, `file:${docId}`));
+    doc(docId).hasFile = true;
+    emit('file', { key: `doc:${docId}` });
+  }
+
+  const getFile = async (docId) => request((await objects('readonly')).get(`file:${docId}`));
+
+  const exportJson = () => JSON.stringify({ app: 'linksdocs', version: 1, ...state }, null, 2);
+
+  function importJson(text) {
+    const data = JSON.parse(text);
+    if (!Array.isArray(data.docs)) throw new Error('Not a LinksDocs export');
+    orphans = { docs: [], highlights: [], links: [] };
+    state = {
+      docs: data.docs.map((d) => ({ ...d, hasFile: false })),
+      highlights: data.highlights ?? [],
+      topics: data.topics ?? [],
+      links: data.links ?? [],
+    };
+    emit('reset');
+  }
+
+  return {
+    load,
+    get state() { return state; },
+    subscribe: (fn) => listeners.add(fn),
+    persist: save,
+    parseKey, get, label, docOf, doc, highlight, topic,
+    linksOf, linksOfDoc, other, highlightsOf,
+    addDoc, addHighlight, addArea, addTopic, addLink,
+    rename, recolor, remove, removeLink,
+    putFile, getFile,
+    exportJson, importJson,
+    get fileStatus() { return fileStatus; },
+    onFileStatus: (fn) => statusListeners.add(fn),
+  };
+})();
