@@ -558,3 +558,42 @@ i[class^="k-"] { display: inline-block; width: 9px; height: 9px; border-radius: 
 .link-to:hover { background: var(--bg-hover); }
 .unlink { width: 24px; height: 24px; font-size: 12px; }
 
+.modal { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(15, 15, 15, .6); }
+.modal-card { width: min(400px, 92vw); padding: 16px; display: grid; gap: 12px; }
+.input {
+  width: 100%; height: 34px; padding: 0 10px; border-radius: 4px;
+  border: 1px solid var(--line-strong); background: var(--bg-soft); color: var(--text); font: inherit;
+}
+.input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent-soft); border-color: var(--accent); }
+
+/* ============ Toasts / drop ============ */
+.toasts { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 40; display: grid; gap: 6px; justify-items: center; }
+.toast {
+  background: var(--toast-bg); color: var(--toast-text);
+  padding: 8px 14px; border-radius: 6px;
+  font-size: 14px; max-width: 70vw;
+  box-shadow: var(--shadow-menu);
+  animation: popIn .15s ease-out; transition: opacity .4s, transform .4s;
+}
+.toast.out { opacity: 0; transform: translateY(6px); }
+
+.drop-overlay {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--bg) 85%, transparent); pointer-events: none;
+}
+.drop-overlay div { border: 2px dashed var(--accent); border-radius: 12px; padding: 40px 60px; font-size: 18px; color: var(--accent); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, .3); border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+@media (max-width: 820px) {
+  .library { display: none; }
+  .main-row { flex-direction: column; }
+  .splitter { display: none; }
+  .graph-panel { width: 100% !important; height: 40%; }
+  .panes.count-2 { grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr); }
+  .page, .panes.count-2 .page { padding: 24px 16px 80px; }
+  .page-title { font-size: 28px; }
+  #exportBtn, #importBtn { display: none; }
+}
