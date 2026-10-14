@@ -252,3 +252,68 @@ const Reader = (() => {
     }
   }
 
+  // Splits text nodes at highlight boundaries and wraps covered pieces in .hl spans.
+  function buildBody(doc, hls) {
+    const root = baseDom(doc);
+    if (root.dataset.loading) return root;
+    const linked = new Set(Store.state.links.flatMap((l) => [l.a, l.b]));
+    addAreas(root, hls.filter((x) => x.area), linked);
+    hls = hls.filter((x) => !x.area);
+    reanchor(root.textContent, hls);
+    if (!hls.length) return root;
+
+    const nodes = [];
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(), pos = 0; n; pos += n.data.length, n = walker.nextNode()) nodes.push([n, pos]);
+
+    for (const [node, ns] of nodes) {
+      const ne = ns + node.data.length;
+      const inside = hls.filter((x) => x.start < ne && x.end > ns);
+      if (!inside.length) continue;
+      const cuts = [...new Set([ns, ne, ...inside.flatMap((x) => [x.start, x.end]).filter((c) => c > ns && c < ne)])]
+        .sort((a, b) => a - b);
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < cuts.length - 1; i++) {
+        const s = cuts[i], e = cuts[i + 1];
+        const piece = node.data.slice(s - ns, e - ns);
+        const covering = inside
+          .filter((x) => x.start <= s && x.end >= e)
+          .sort((a, b) => (b.end - b.start) - (a.end - a.start)); // innermost last
+        if (!covering.length || !piece.trim()) {
+          frag.append(piece);
+          continue;
+        }
+        const keys = covering.map((x) => `hl:${x.id}`);
+        const span = document.createElement('span');
+        span.className = 'hl';
+        span.classList.toggle('linked', keys.some((k) => linked.has(k)));
+        span.classList.toggle('pending', keys.includes(pendingKey));
+        span.dataset.hls = covering.map((x) => x.id).join(' ');
+        span.style.setProperty('--c', covering.at(-1).color);
+        span.textContent = piece;
+        frag.appendChild(span);
+      }
+      node.replaceWith(frag);
+    }
+    return root;
+  }
+
+  // Area highlights are boxes positioned in % of their page (PDF sheet or image).
+  function addAreas(root, areas, linked) {
+    const sheets = root.querySelectorAll('.pdf-sheet, .img-sheet');
+    for (const x of areas) {
+      const sheet = sheets[x.area.page];
+      if (!sheet) continue;
+      const key = `hl:${x.id}`;
+      const el = document.createElement('div');
+      el.className = `area${linked.has(key) ? ' linked' : ''}${key === pendingKey ? ' pending' : ''}`;
+      el.dataset.area = x.id;
+      el.title = x.text;
+      el.style.cssText = `--c:${x.color};${boxStyle(x.area)}`;
+      sheet.appendChild(el);
+    }
+  }
+
+  const pct = (v) => `${(v * 100).toFixed(3)}%`;
+  const boxStyle = (r) => `left:${pct(r.x)};top:${pct(r.y)};width:${pct(r.w)};height:${pct(r.h)}`;
+
