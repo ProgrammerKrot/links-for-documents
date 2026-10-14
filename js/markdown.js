@@ -37,3 +37,59 @@ const Markdown = (() => {
     return blocks(lines);
   }
 
+  function blocks(lines) {
+    const out = [];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+
+      if (!line.trim()) { i++; continue; }
+
+      const fence = line.match(/^\s*(```|~~~)\s*(\S*)/);
+      if (fence) {
+        const body = [];
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith(fence[1])) body.push(lines[i++]);
+        i++;
+        out.push(`<pre><code>${esc(body.join('\n'))}</code></pre>`);
+        continue;
+      }
+
+      const h = line.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/);
+      if (h) { out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
+
+      if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { out.push('<hr>'); i++; continue; }
+
+      if (/^\s*>/.test(line)) {
+        const body = [];
+        while (i < lines.length && /^\s*>/.test(lines[i])) body.push(lines[i++].replace(/^\s*>\s?/, ''));
+        out.push(`<blockquote>${blocks(body)}</blockquote>`);
+        continue;
+      }
+
+      if (line.includes('|') && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        const head = cells(line);
+        i += 2;
+        const rows = [];
+        while (i < lines.length && lines[i].includes('|') && lines[i].trim()) rows.push(cells(lines[i++]));
+        out.push(`<table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${
+          rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+        continue;
+      }
+
+      if (listItem.test(line)) {
+        const [html, next] = list(lines, i);
+        out.push(html);
+        i = next;
+        continue;
+      }
+
+      const para = [];
+      while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\s*>|\s*```|\s*~~~)/.test(lines[i]) && !(para.length && listItem.test(lines[i]))) {
+        para.push(lines[i++].trim());
+      }
+      out.push(`<p>${inline(para.join('\n')).replace(/\n/g, '<br>\n')}</p>`);
+    }
+    return out.join('\n');
+  }
+
