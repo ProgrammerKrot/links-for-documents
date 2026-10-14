@@ -317,3 +317,53 @@ const Reader = (() => {
   const pct = (v) => `${(v * 100).toFixed(3)}%`;
   const boxStyle = (r) => `left:${pct(r.x)};top:${pct(r.y)};width:${pct(r.w)};height:${pct(r.h)}`;
 
+  // Drag a rectangle on a page: on images always, on PDFs with the area tool on or Alt held.
+  function startDrawing(e) {
+    const sheet = e.button === 0 && e.target.closest('.pdf-sheet, .img-sheet');
+    if (!sheet || e.target.closest('.area')) return;
+    const docId = sheet.closest('.pane').dataset.doc;
+    if (!(sheet.classList.contains('img-sheet') || drawing.has(docId) || e.altKey)) return;
+    e.preventDefault();
+    getSelection().removeAllRanges();
+
+    const box = sheet.getBoundingClientRect();
+    const point = (ev) => ({
+      x: clamp((ev.clientX - box.left) / box.width, 0, 1),
+      y: clamp((ev.clientY - box.top) / box.height, 0, 1),
+    });
+    const start = point(e);
+    let rect = { x: start.x, y: start.y, w: 0, h: 0 };
+    const ghost = document.createElement('div');
+    ghost.className = 'area ghost';
+    sheet.appendChild(ghost);
+
+    const move = (ev) => {
+      const p = point(ev);
+      rect = { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) };
+      ghost.style.cssText = boxStyle(rect);
+    };
+    const end = (ev) => {
+      sheet.removeEventListener('pointermove', move);
+      sheet.removeEventListener('pointerup', end);
+      sheet.removeEventListener('pointercancel', end);
+      ghost.remove();
+      // ignore clicks and tiny drags (written so a zero-size sheet's NaN also bails out)
+      if (ev.type === 'pointercancel' || !(rect.w * box.width >= 8 && rect.h * box.height >= 8)) return;
+      const round = (v) => Math.round(v * 1e5) / 1e5;
+      on.onArea({
+        docId,
+        area: { page: Number(sheet.dataset.page) - 1, x: round(rect.x), y: round(rect.y), w: round(rect.w), h: round(rect.h) },
+        thumb: thumbnail(sheet, rect),
+        rect: {
+          left: box.left + rect.x * box.width, top: box.top + rect.y * box.height,
+          right: box.left + (rect.x + rect.w) * box.width, bottom: box.top + (rect.y + rect.h) * box.height,
+          width: rect.w * box.width, height: rect.h * box.height,
+        },
+      });
+    };
+    try { sheet.setPointerCapture(e.pointerId); } catch { /* keep drawing without capture */ }
+    sheet.addEventListener('pointermove', move);
+    sheet.addEventListener('pointerup', end);
+    sheet.addEventListener('pointercancel', end);
+  }
+
