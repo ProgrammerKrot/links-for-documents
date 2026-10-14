@@ -279,3 +279,56 @@ const Store = (() => {
     return h;
   }
 
+  // A rectangle drawn on a PDF page or an image. `area` is { page, x, y, w, h } with
+  // page 0-based and x/y/w/h as fractions of the page size; `text` is its caption and
+  // `thumb` a small JPEG data URL of the marked region.
+  function addArea(docId, area, color, text, thumb) {
+    const h = { id: uid('h'), docId, area, text, color, ...(thumb && { thumb }) };
+    state.highlights.push(h);
+    emit('hl:add', { highlight: h });
+    return h;
+  }
+
+  function addTopic(name) {
+    const t = { id: uid('t'), name };
+    state.topics.push(t);
+    emit('topic:add', { topic: t });
+    return t;
+  }
+
+  // Returns null for self-links and duplicates.
+  function addLink(a, b) {
+    if (a === b || state.links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a))) return null;
+    const link = { id: uid('l'), a, b };
+    state.links.push(link);
+    emit('link:add', { link });
+    return link;
+  }
+
+  // Documents and topics have a name; an area highlight's caption is its text.
+  function rename(key, name) {
+    const item = get(key);
+    if (item.area) item.text = name;
+    else item.name = name;
+    emit('rename', { key });
+  }
+
+  function recolor(hlId, color) {
+    highlight(hlId).color = color;
+    emit('recolor', { key: `hl:${hlId}` });
+  }
+
+  // Removing a document also removes its highlights, every link touching them, and the stored original.
+  function remove(key) {
+    const { kind, id } = parseKey(key);
+    const keys = new Set([key]);
+    if (kind === 'doc') {
+      highlightsOf(id).forEach((h) => keys.add(`hl:${h.id}`));
+      state.highlights = state.highlights.filter((h) => h.docId !== id);
+      if (doc(id).hasFile) objects('readwrite').then((s) => s.delete(`file:${id}`));
+    }
+    state.links = state.links.filter((l) => !keys.has(l.a) && !keys.has(l.b));
+    state[TABLES[kind]] = state[TABLES[kind]].filter((item) => item.id !== id);
+    emit('remove', { key });
+  }
+
