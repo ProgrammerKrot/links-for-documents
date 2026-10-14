@@ -73,3 +73,61 @@ const Reader = (() => {
     scheduleConnectors();
   }
 
+  function renderPane(docId, slot) {
+    const doc = Store.doc(docId);
+    const hls = Store.highlightsOf(docId);
+    const type = docType(doc.kind);
+
+    // other documents and topics this one is linked with, counted per target
+    const related = new Map();
+    for (const l of Store.linksOfDoc(docId)) {
+      for (const k of [l.a, l.b]) {
+        const owner = Store.docOf(k);
+        if (owner === docId) continue;
+        const key = owner ? `doc:${owner}` : k;
+        related.set(key, (related.get(key) ?? 0) + 1);
+      }
+    }
+    const chips = [...related].map(([key, n]) => {
+      const item = Store.get(key);
+      const isDoc = key.startsWith('doc:');
+      return `<button class="chip" data-key="${key}">${isDoc ? docIcon(item.kind, 14) : '<i class="k-topic"></i>'}` +
+        `<span>${escapeHtml(isDoc ? item.name : `#${item.name}`)}</span>${n > 1 ? `<em>${n}</em>` : ''}</button>`;
+    }).join('') || '<span class="prop-empty">Empty</span>';
+
+    const pane = document.createElement('article');
+    const canDraw = doc.kind === 'pdf' && doc.hasFile && PdfView.status(docId) === 'ready';
+    pane.className = `pane${slot === activeSlot && slots[1] ? ' active' : ''}${canDraw && drawing.has(docId) ? ' drawing' : ''}`;
+    pane.dataset.doc = docId;
+    pane.dataset.slot = slot;
+    pane.innerHTML = `
+      <header class="pane-head">
+        <div class="crumb">${docIcon(doc.kind, 16)}<span title="${escapeHtml(doc.name)}">${escapeHtml(doc.name)}</span></div>
+        ${canDraw ? `<button class="icon-btn area-tool${drawing.has(docId) ? ' on' : ''}" title="Mark an area: drag a rectangle on a page (Alt+drag works any time)">▭</button>` : ''}
+        ${(doc.kind === 'pdf' || doc.kind === 'image') && doc.hasFile ? '<button class="icon-btn open-original" title="Open the original in a new tab">↗</button>' : ''}
+        <button class="icon-btn link-doc${pendingKey === `doc:${docId}` ? ' pending' : ''}" title="${pendingKey ? 'Link to this whole document' : 'Link this whole document…'}">⛓</button>
+        <button class="icon-btn close-pane" title="Close">✕</button>
+      </header>
+      <div class="pane-scroll">
+        <div class="page${doc.kind === 'pdf' || doc.kind === 'image' ? ' wide' : ''}">
+          <div class="page-icon">${docIcon(doc.kind, 64)}</div>
+          <h1 class="page-title">${escapeHtml(doc.name)}</h1>
+          <div class="props">
+            <div class="prop"><span class="prop-k"><b>◉</b>Type</span><span class="prop-v"><span class="tag" style="--c:${type.color}">${type.label}</span></span></div>
+            <div class="prop"><span class="prop-k"><b>✎</b>Highlights</span><span class="prop-v">${hls.length || '<span class="prop-empty">Empty</span>'}</span></div>
+            <div class="prop"><span class="prop-k"><b>⛓</b>Linked with</span><span class="prop-v chips">${chips}</span></div>
+          </div>
+          <div class="page-divider"></div>
+        </div>
+      </div>`;
+
+    const body = buildBody(doc, hls);
+    // the page title already shows the name, so hide a leading "# Name" that repeats it
+    const first = body.firstElementChild;
+    if (first?.tagName === 'H1' && first.textContent.trim().toLowerCase() === doc.name.trim().toLowerCase()) {
+      first.classList.add('dup-title');
+    }
+    pane.querySelector('.page').appendChild(body);
+    return pane;
+  }
+
