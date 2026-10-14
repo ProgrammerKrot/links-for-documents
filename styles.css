@@ -36,3 +36,58 @@
   color-scheme: light;
 }
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #191919;
+    --bg-side: #202020;
+    --bg-hover: rgba(255, 255, 255, .055);
+    --bg-active: rgba(255, 255, 255, .09);
+    --bg-soft: #252525;
+    --bg-page: #141414;
+    --line: rgba(255, 255, 255, .094);
+    --line-strong: rgba(255, 255, 255, .16);
+    --text: rgba(255, 255, 255, .81);
+    --text-2: rgba(255, 255, 255, .55);
+    --text-3: rgba(255, 255, 255, .35);
+    --accent-soft: rgba(35, 131, 226, .25);
+    --shadow-menu: rgba(15, 15, 15, .1) 0 0 0 1px, rgba(15, 15, 15, .2) 0 3px 6px, rgba(15, 15, 15, .4) 0 9px 24px;
+    --shadow-sheet: 0 0 0 1px rgba(255, 255, 255, .06), 0 4px 16px rgba(0, 0, 0, .4);
+    --toast-bg: #373737;
+    --hl-mix: 36%;
+    --g-bg: #1c1c1c;
+    --g-edge: rgba(255, 255, 255, .13);
+    --g-edge-hot: rgba(255, 255, 255, .4);
+    --g-particle: #529cca;
+    --g-ring: rgba(255, 255, 255, .85);
+    --g-doc-fill: #252525;
+    --g-label: rgba(255, 255, 255, .78);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #191919;
+  --bg-side: #202020;
+  --bg-hover: rgba(255, 255, 255, .055);
+  --bg-active: rgba(255, 255, 255, .09);
+  --bg-soft: #252525;
+  --bg-page: #141414;
+  --line: rgba(255, 255, 255, .094);
+  --line-strong: rgba(255, 255, 255, .16);
+  --text: rgba(255, 255, 255, .81);
+  --text-2: rgba(255, 255, 255, .55);
+  --text-3: rgba(255, 255, 255, .35);
+  --accent-soft: rgba(35, 131, 226, .25);
+  --shadow-menu: rgba(15, 15, 15, .1) 0 0 0 1px, rgba(15, 15, 15, .2) 0 3px 6px, rgba(15, 15, 15, .4) 0 9px 24px;
+  --shadow-sheet: 0 0 0 1px rgba(255, 255, 255, .06), 0 4px 16px rgba(0, 0, 0, .4);
+  --toast-bg: #373737;
+  --hl-mix: 36%;
+  --g-bg: #1c1c1c;
+  --g-edge: rgba(255, 255, 255, .13);
+  --g-edge-hot: rgba(255, 255, 255, .4);
+  --g-particle: #529cca;
+  --g-ring: rgba(255, 255, 255, .85);
+  --g-doc-fill: #252525;
+  --g-label: rgba(255, 255, 255, .78);
+  color-scheme: dark;
+}
+
