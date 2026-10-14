@@ -176,3 +176,62 @@ const Store = (() => {
     }, delay);
   }
 
+  async function writeLinksFile() {
+    writing = true;
+    try {
+      let data = linksFileData();
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const res = await fetch('/api/links', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Base-Version': version ?? 'none' },
+          body: JSON.stringify(data, null, 2),
+        });
+        if (res.ok) {
+          [version, base] = [res.headers.get('X-Version'), data];
+          return setFileStatus('saved');
+        }
+        if (res.status !== 409) break;
+        // links.tr changed elsewhere since we read it: merge our changes into the newer file
+        const latest = await fetch('/api/links', { cache: 'no-store' });
+        const theirs = latest.ok ? await latest.json() : {};
+        data = merge(base, data, theirs);
+        [version, base] = [latest.headers.get('X-Version'), theirs];
+        applyLinksFile(data);
+        data = linksFileData();
+        notify('sync');
+      }
+      setFileStatus('error');
+    } catch {
+      setFileStatus('error');
+    } finally {
+      writing = false;
+    }
+  }
+
+  function emit(type, payload) {
+    save();
+    listeners.forEach((fn) => fn({ type, ...payload }));
+  }
+
+  // State replaced from links.tr: refresh the UI and IndexedDB, but don't write the file back.
+  function notify(type) {
+    saveLocal();
+    listeners.forEach((fn) => fn({ type }));
+  }
+
+  const uid = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+  function parseKey(key) {
+    const i = key.indexOf(':');
+    return { kind: key.slice(0, i), id: key.slice(i + 1) };
+  }
+
+  function get(key) {
+    const { kind, id } = parseKey(key);
+    return state[TABLES[kind]].find((item) => item.id === id);
+  }
+
+  const doc = (id) => get(`doc:${id}`);
+  const highlight = (id) => get(`hl:${id}`);
+  const topic = (id) => get(`topic:${id}`);
+
