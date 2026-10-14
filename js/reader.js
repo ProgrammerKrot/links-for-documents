@@ -223,3 +223,32 @@ const Reader = (() => {
     return { out, map };
   }
 
+  // Moves highlights whose offsets no longer match their text (renderer or PDF view changed)
+  // to the nearest occurrence: exact, then accent-fixed, then ignoring accents and spacing.
+  function reanchor(text, hls) {
+    let loose;
+    let moved = false;
+    for (const x of hls) {
+      if (text.slice(x.start, x.end) === x.text) continue;
+      let start = -1, end;
+      for (const needle of [x.text, Importers.fixAccents(x.text)]) {
+        start = nearest(text, needle, x.start);
+        if (start >= 0) { end = start + needle.length; break; }
+      }
+      if (start < 0) {
+        loose ??= looseIndex(text);
+        const needle = looseIndex(Importers.fixAccents(x.text)).out;
+        const at = needle ? nearest(loose.out, needle, loose.map.findIndex((p) => p >= x.start)) : -1;
+        if (at < 0) continue;
+        start = loose.map[at];
+        end = loose.map[at + needle.length - 1] + 1;
+      }
+      Object.assign(x, { start, end, text: text.slice(start, end) });
+      moved = true;
+    }
+    if (moved) {
+      Store.persist();
+      setTimeout(on.onReanchor);
+    }
+  }
+
