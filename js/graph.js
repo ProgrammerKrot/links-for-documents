@@ -138,3 +138,34 @@ class ForceGraph {
     this.alpha *= 0.993;
   }
 
+  frame(t) {
+    this.tick();
+    if (this.fitWhenSettled && this.alpha < 0.08) {
+      this.fitWhenSettled = false;
+      this.fit();
+    }
+    if (this.viewTarget) {
+      const v = this.view, g = this.viewTarget;
+      v.x += (g.x - v.x) * 0.15;
+      v.y += (g.y - v.y) * 0.15;
+      v.k += (g.k - v.k) * 0.15;
+      if (Math.abs(g.x - v.x) + Math.abs(g.y - v.y) + Math.abs(g.k - v.k) * 100 < 0.5) this.viewTarget = null;
+    }
+    this.draw(t);
+    requestAnimationFrame((t) => this.frame(t));
+  }
+
+  readTheme() {
+    const css = getComputedStyle(document.documentElement);
+    const v = (name) => css.getPropertyValue(name).trim();
+    this.theme = {
+      link: v('--link'),
+      edge: v('--g-edge'),
+      edgeHot: v('--g-edge-hot'),
+      particle: v('--g-particle'),
+      ring: v('--g-ring'),
+      docFill: v('--g-doc-fill'),
+      label: v('--g-label'),
+    };
+  }
+
