@@ -63,3 +63,47 @@ async function readLinks() {
 
 let writes = Promise.resolve(); // one PUT at a time, so check-then-write can't interleave
 
+async function handleLinks(req, res) {
+  if (req.method === 'GET') {
+    try {
+      const text = await readLinks();
+      const version = versionOf(text);
+      const headers = { 'X-Version': version };
+      if (req.headers['x-known-version'] === version) return send(res, 304, '', undefined, headers);
+      if (text == null) return send(res, 404, 'No links.tr yet', undefined, headers);
+      send(res, 200, text, 'application/json; charset=utf-8', headers);
+    } catch (err) {
+      send(res, 500, err.message);
+    }
+    return;
+  }
+  if (req.method === 'PUT') {
+    let body;
+    try {
+      body = await readBody(req);
+      JSON.parse(body); // refuse to write anything that isn't valid JSON
+    } catch (err) {
+      return send(res, 400, err.message);
+    }
+    writes = writes.then(async () => {
+      try {
+        const current = versionOf(await readLinks());
+        // a PUT without a base version (e.g. a tab still running older code) is refused as well,
+        // so it can't silently overwrite changes it never saw
+        if (req.headers['x-base-version'] !== current) {
+          return send(res, 409, 'links.tr changed since you read it — reload the page', undefined, { 'X-Version': current });
+        }
+        // write to a temp file first so a crash never leaves a half-written links.tr
+        const tmp = `${LINKS_FILE}.tmp`;
+        await fs.promises.writeFile(tmp, body, 'utf8');
+        await fs.promises.rename(tmp, LINKS_FILE);
+        send(res, 200, '', undefined, { 'X-Version': versionOf(body) });
+      } catch (err) {
+        send(res, 500, err.message);
+      }
+    });
+    return;
+  }
+  send(res, 405, 'Method not allowed');
+}
+
