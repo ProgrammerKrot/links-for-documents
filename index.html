@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinksDocs</title>
+  <script>
+    const theme = localStorage.getItem('theme');
+    if (theme) document.documentElement.dataset.theme = theme;
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="layout">
+    <aside id="library" class="library">
+      <div class="workspace-head">
+        <span class="ws-avatar">L</span>
+        <span class="ws-name">LinksDocs</span>
+      </div>
+      <button id="uploadSide" class="side-row action"><span class="side-ico">↥</span>Upload documents</button>
+      <button id="newTopicBtn" class="side-row action"><span class="side-ico">＋</span>New topic</button>
+
+      <div class="section-label">Documents</div>
+      <ul id="docList" class="lib-list"></ul>
+      <div class="section-label">Topics</div>
+      <ul id="topicList" class="lib-list"></ul>
+    </aside>
+
+    <div class="main-col">
