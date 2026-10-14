@@ -71,3 +71,44 @@ const Importers = (() => {
     return fixAccents(paras.join('\n\n'));
   }
 
+  async function docxToText(file) {
+    await loadScript(MAMMOTH);
+    return (await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })).value;
+  }
+
+  function htmlToText(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    doc.querySelectorAll('script,style,noscript').forEach((el) => el.remove());
+    return doc.body.textContent.replace(/\n{3,}/g, '\n\n');
+  }
+
+  // LaTeX PDFs store accents as separate spacing characters before the letter
+  // ("matem´atica", "indu¸c˜ao"); turn them back into composed letters.
+  const COMBINING = { '´': '́', '`': '̀', 'ˆ': '̂', '˜': '̃', '¨': '̈', '¸': '̧', 'ˇ': '̌', '˚': '̊' };
+  const fixAccents = (text) => text
+    .replace(/([´`ˆ˜¨¸ˇ˚]) ?(\p{L})/gu, (_, accent, letter) => (letter === 'ı' ? 'i' : letter) + COMBINING[accent])
+    .replace(/(\p{L})¸/gu, '$1̧')
+    .normalize('NFC');
+
+  const IMAGES = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif'];
+
+  async function read(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const name = file.name.replace(/\.[^.]+$/, '');
+    // images have no text; the original file is the document
+    if (IMAGES.includes(ext)) return { name, kind: 'image', content: '', original: file };
+    let content;
+    if (ext === 'pdf') content = await pdfToText(file);
+    else if (ext === 'docx') content = await docxToText(file);
+    else if (ext === 'html' || ext === 'htm') content = htmlToText(await file.text());
+    else content = await file.text();
+    return {
+      name,
+      kind: ext === 'markdown' ? 'md' : ext,
+      content: content.trim(),
+      original: ext === 'pdf' ? file : null,
+    };
+  }
+
+  return { read, fixAccents, pdfjs };
+})();
