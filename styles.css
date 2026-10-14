@@ -1,0 +1,38 @@
+/* ============ Theme tokens (Notion-like) ============ */
+:root {
+  --bg: #ffffff;
+  --bg-side: #f7f7f5;
+  --bg-hover: rgba(55, 53, 47, .06);
+  --bg-active: rgba(55, 53, 47, .09);
+  --bg-soft: #f1f1ef;
+  --bg-page: #f1f1ef;          /* behind PDF sheets */
+  --line: rgba(55, 53, 47, .09);
+  --line-strong: rgba(55, 53, 47, .16);
+  --text: #37352f;
+  --text-2: rgba(55, 53, 47, .65);
+  --text-3: rgba(55, 53, 47, .45);
+  --accent: #2383e2;
+  --accent-soft: rgba(35, 131, 226, .14);
+  --link: #2383e2;
+  --topic: #4dab9a;
+  --danger: #eb5757;
+  --shadow-menu: rgba(15, 15, 15, .05) 0 0 0 1px, rgba(15, 15, 15, .1) 0 3px 6px, rgba(15, 15, 15, .2) 0 9px 24px;
+  --shadow-sheet: 0 0 0 1px rgba(15, 15, 15, .05), 0 2px 8px rgba(15, 15, 15, .08);
+  --toast-bg: #2f2f2f;
+  --toast-text: #ffffff;
+  --hl-mix: 32%;
+
+  /* graph */
+  --g-bg: #fbfbfa;
+  --g-edge: rgba(55, 53, 47, .16);
+  --g-edge-hot: rgba(55, 53, 47, .45);
+  --g-particle: #2383e2;
+  --g-ring: #37352f;
+  --g-doc-fill: #ffffff;
+  --g-label: #37352f;
+
+  --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif;
+  --mono: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace;
+  color-scheme: light;
+}
+
