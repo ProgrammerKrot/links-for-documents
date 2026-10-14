@@ -405,3 +405,41 @@ async function main() {
     if (evt.type === 'link:add') graph.animateLink(project(evt.link.a), project(evt.link.b));
   });
 
+  for (const id of ['#uploadBtn', '#uploadSide', '#emptyUpload']) $(id).onclick = () => $('#fileInput').click();
+  $('#fileInput').onchange = (e) => {
+    addFiles([...e.target.files]);
+    e.target.value = '';
+  };
+  $('#newTopicBtn').onclick = async () => {
+    const name = await ask('New topic');
+    if (!name) return;
+    const key = `topic:${Store.addTopic(name.replace(/^#/, '')).id}`;
+    graph.focusNode(key);
+    if (pending) completeLink(key);
+  };
+  $('#exportBtn').onclick = () => download(`linksdocs-${new Date().toISOString().slice(0, 10)}.json`, Store.exportJson());
+  $('#importBtn').onclick = () => $('#importInput').click();
+  $('#importInput').onchange = async (e) => {
+    const [file] = e.target.files;
+    e.target.value = '';
+    if (!file || !await ask('Replace your current workspace with this export?', '', { confirm: true })) return;
+    try {
+      Store.importJson(await file.text());
+      toast('Workspace imported');
+      graph.requestFit();
+    } catch (err) {
+      toast(`Import failed: ${err.message}`);
+    }
+  };
+  $('#sampleBtn').onclick = () => { loadSamples(); graph.requestFit(); };
+  $('#themeBtn').onclick = () => {
+    const root = document.documentElement;
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    localStorage.setItem('theme', root.dataset.theme);
+  };
+  $('#toggleLibrary').onclick = () => document.body.classList.toggle('no-library');
+  $('#showHighlights').onchange = () => { buildGraph(); graph.requestFit(); };
+  $('#fitGraph').onclick = () => graph.fit();
+  $('#library').addEventListener('click', onLibraryClick);
+
