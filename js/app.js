@@ -348,3 +348,60 @@ function showGraphTip(key, e) {
   tip.style.top = `${e.clientY - r.top + 14}px`;
 }
 
+function initDropZone() {
+  const overlay = $('#dropOverlay');
+  let depth = 0;
+  addEventListener('dragenter', (e) => {
+    if (!e.dataTransfer.types.includes('Files')) return;
+    depth++;
+    overlay.hidden = false;
+  });
+  addEventListener('dragleave', () => {
+    if (--depth > 0) return;
+    depth = 0;
+    overlay.hidden = true;
+  });
+  addEventListener('dragover', (e) => e.preventDefault());
+  addEventListener('drop', (e) => {
+    e.preventDefault();
+    depth = 0;
+    overlay.hidden = true;
+    addFiles([...e.dataTransfer.files]);
+  });
+}
+
+async function main() {
+  await Store.load();
+
+  graph = new ForceGraph($('#graph'), {
+    onNodeClick(key, e) {
+      showGraphTip(null);
+      if (pending) completeLink(key);
+      else if (key.startsWith('topic:')) showTopicPopup(key, pointRect(e.clientX, e.clientY));
+      else openKey(key);
+    },
+    onHover: showGraphTip,
+  });
+
+  Reader.init({
+    onSelection,
+    onHighlightClick,
+    onArea,
+    onDocLink: (docId) => linkAction(`doc:${docId}`),
+    onOpenKey: openKey,
+    onOpenOriginal: async (docId) => window.open(URL.createObjectURL(await Store.getFile(docId)), '_blank'),
+    onHover: (key) => graph.setExternalHover(key && project(key)),
+    onRender: () => { renderLibrary(); graph.setActive(openDocKeys()); },
+    onScroll: hidePopup,
+    onReanchor: buildGraph,
+  });
+
+  Store.subscribe((evt) => {
+    // a link in progress can't survive a reset, or a sync that removed its source
+    if (evt.type === 'reset' || (pending && !Store.get(pending))) cancelLink();
+    if (evt.type === 'link:add') Reader.markFresh(evt.link.id);
+    buildGraph();
+    Reader.render();
+    if (evt.type === 'link:add') graph.animateLink(project(evt.link.a), project(evt.link.b));
+  });
+
