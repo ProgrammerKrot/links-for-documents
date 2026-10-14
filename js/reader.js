@@ -174,3 +174,52 @@ const Reader = (() => {
     return cached.el.cloneNode(true);
   }
 
+  const plainText = (doc) => baseDom(doc).textContent;
+
+  function loadingBody(message) {
+    const el = document.createElement('div');
+    el.className = 'doc-body doc-loading';
+    el.dataset.loading = message;
+    return el;
+  }
+
+  // An image document: the stored original, with areas drawn on top of it.
+  function imageDom(doc) {
+    const url = imageUrls.get(doc.id);
+    if (!doc.hasFile) return loadingBody('Image not stored in this browser — upload it again');
+    if (!url) {
+      imageUrls.set(doc.id, 'loading');
+      Store.getFile(doc.id).then((blob) => {
+        if (blob) imageUrls.set(doc.id, URL.createObjectURL(blob));
+        else imageUrls.delete(doc.id);
+        render();
+      });
+    }
+    if (!url || url === 'loading') return loadingBody('Loading image…');
+    const root = document.createElement('div');
+    root.className = 'doc-body imageview';
+    root.innerHTML = `<div class="img-sheet" data-page="1"><img src="${url}" alt="" draggable="false"></div>`;
+    return root;
+  }
+
+  function nearest(hay, needle, from) {
+    let best = -1;
+    for (let i = hay.indexOf(needle); i >= 0; i = hay.indexOf(needle, i + 1)) {
+      if (best < 0 || Math.abs(i - from) < Math.abs(best - from)) best = i;
+    }
+    return best;
+  }
+
+  // Lowercase letters only (no accents or whitespace) plus a map back to positions in `text`.
+  function looseIndex(text) {
+    let out = '';
+    const map = [];
+    for (let i = 0; i < text.length; i++) {
+      for (const ch of text[i].normalize('NFD').replace(/[̀-ͯ\s´`ˆ˜¨¸ˇ˚]/g, '').toLowerCase()) {
+        out += ch;
+        map.push(i);
+      }
+    }
+    return { out, map };
+  }
+
