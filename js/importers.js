@@ -35,3 +35,39 @@ const Importers = (() => {
     return pages.join('\f');
   }
 
+  // Lines come from item y-positions, paragraphs from vertical gaps between lines.
+  function paragraphs(items) {
+    const lines = [];
+    for (const it of items) {
+      if (!('str' in it)) continue;
+      const y = it.transform[5];
+      const h = it.height || Math.abs(it.transform[3]) || 10;
+      const line = lines.at(-1);
+      if (line && Math.abs(y - line.y) <= h / 2) {
+        line.text += it.str;
+        line.h = Math.max(line.h, h);
+      } else {
+        lines.push({ text: it.str, y, h });
+      }
+    }
+
+    const paras = [];
+    let para = '';
+    let prev;
+    for (const line of lines) {
+      const text = line.text.replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      // a big gap down, or a jump back up (next column), starts a paragraph
+      if (prev && (prev.y - line.y > prev.h * 1.7 || line.y - prev.y > prev.h)) {
+        paras.push(para);
+        para = '';
+      }
+      if (!para) para = text;
+      else if (/\p{L}-$/u.test(para)) para = para.slice(0, -1) + text;
+      else para += ' ' + text;
+      prev = line;
+    }
+    if (para) paras.push(para);
+    return fixAccents(paras.join('\n\n'));
+  }
+
