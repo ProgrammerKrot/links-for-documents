@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=LinksDocs
+Comment=Start the LinksDocs server and open it in the browser
+Exec=sh -c 'cd "$(dirname "%k")" && sh ./start.sh'
+Icon=text-x-generic
+Terminal=true
+Categories=Office;
