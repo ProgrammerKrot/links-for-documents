@@ -137,3 +137,42 @@ const Store = (() => {
     orphans.links = pending;
   }
 
+  // Human-readable endpoint, written next to each link so links.tr can be read as-is.
+  function describe(key) {
+    const { kind, id } = parseKey(key);
+    const item = get(key) ?? (kind === 'hl' ? orphans.highlights.find((h) => h.id === id) : orphans.docs.find((d) => d.id === id));
+    if (!item) return key;
+    if (kind === 'topic') return `#${item.name}`;
+    if (kind === 'doc') return item.name;
+    const owner = doc(item.docId) ?? orphans.docs.find((d) => d.id === item.docId);
+    return `${owner?.name ?? '?'} › “${Importers.fixAccents(item.text)}”`;
+  }
+
+  function linksFileData() {
+    return {
+      format: 'linksdocs/links',
+      version: 1,
+      saved: new Date().toISOString(),
+      documents: [...state.docs.map(({ id, name, kind }) => ({ id, name, kind })), ...orphans.docs],
+      topics: state.topics.map(({ id, name }) => ({ id, name })),
+      highlights: [
+        ...state.highlights.map(({ id, docId, start, end, area, text, color, thumb }) => ({ id, docId, start, end, area, text, color, thumb })),
+        ...orphans.highlights,
+      ],
+      links: [...state.links, ...orphans.links].map(({ id, a, b }) => ({ id, a, b, from: describe(a), to: describe(b) })),
+    };
+  }
+
+  let fileTimer = null;
+  let writing = false;
+  function scheduleFileWrite(delay = 300) {
+    if (fileStatus === 'off' || fileBroken) return;
+    clearTimeout(fileTimer);
+    setFileStatus('saving');
+    fileTimer = setTimeout(() => {
+      fileTimer = null;
+      if (writing) scheduleFileWrite(200); // let the write in flight finish first
+      else writeLinksFile();
+    }, delay);
+  }
+
