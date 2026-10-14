@@ -499,3 +499,68 @@ const Reader = (() => {
     return { y, off: false };
   }
 
+  function drawConnectors() {
+    if (!slots[1]) {
+      svg.innerHTML = '';
+      return;
+    }
+    const [paneA, paneB] = [0, 1].map((i) => panesEl.querySelector(`.pane[data-slot="${i}"]`));
+    const ws = workspace.getBoundingClientRect();
+    const x1 = paneA.getBoundingClientRect().right - ws.left - 6;
+    const x2 = paneB.getBoundingClientRect().left - ws.left + 6;
+    const dx = (x2 - x1) * 0.6;
+
+    svg.innerHTML = Store.state.links.map((link) => {
+      const [da, db] = [Store.docOf(link.a), Store.docOf(link.b)];
+      let ka, kb;
+      if (da === slots[0] && db === slots[1]) [ka, kb] = [link.a, link.b];
+      else if (da === slots[1] && db === slots[0]) [ka, kb] = [link.b, link.a];
+      else return '';
+      const A = anchorY(ka, paneA), B = anchorY(kb, paneB);
+      if (!A || !B) return '';
+      const y1 = A.y - ws.top, y2 = B.y - ws.top;
+      const d = `M${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+      const cls = ['conn',
+        (A.off || B.off) && 'off',
+        freshLinks.has(link.id) && 'fresh',
+        hoverKey && (hoverKey === ka || hoverKey === kb) && 'hot'].filter(Boolean).join(' ');
+      return `<g class="${cls}" data-a="${ka}" data-b="${kb}">
+        <path class="base" d="${d}" pathLength="100"/><path class="flow" d="${d}" pathLength="100"/>
+        <circle cx="${x1}" cy="${y1}" r="3.5"/><circle cx="${x2}" cy="${y2}" r="3.5"/></g>`;
+    }).join('');
+
+    if (freshLinks.size) {
+      setTimeout(() => {
+        freshLinks.clear();
+        svg.querySelectorAll('.fresh').forEach((g) => g.classList.remove('fresh'));
+      }, 1200);
+    }
+  }
+
+  return {
+    init, open, render, openDocs, scrollToHighlight, setPending, markFresh, plainText,
+    redrawConnectors: scheduleConnectors,
+  };
+})();
+
+const DOC_TYPES = {
+  pdf: { color: '#e16259', label: 'PDF' },
+  md: { color: '#9a6dd7', label: 'MD' },
+  image: { color: '#337ea9', label: 'IMG' },
+};
+const docType = (kind) => DOC_TYPES[kind] ?? { color: '#9b9a97', label: kind.slice(0, 4).toUpperCase() };
+
+function docIcon(kind, size = 16) {
+  const { color } = docType(kind);
+  return `<svg class="doc-icon" width="${size}" height="${size}" viewBox="0 0 16 16" aria-hidden="true">
+    <path d="M3.5 1.5h6l3 3v10h-9z" fill="${color}" fill-opacity=".18" stroke="${color}" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M9.5 1.5v3h3" fill="none" stroke="${color}" stroke-width="1.2" stroke-linejoin="round"/>
+    ${kind === 'image'
+      ? `<circle cx="6.3" cy="7.3" r="1.1" fill="${color}"/><path d="M4.7 12.6l2.6-2.8 1.6 1.6 1.4-1.4 1.6 2.6z" fill="${color}"/>`
+      : `<path d="M5.5 8h5M5.5 10h5M5.5 12h3" stroke="${color}" stroke-width="1" stroke-linecap="round"/>`}
+  </svg>`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
