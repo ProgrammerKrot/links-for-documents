@@ -187,3 +187,49 @@ function onHighlightClick(hlId, rect, overlapping) {
   });
 }
 
+function showTopicPopup(key, rect) {
+  const t = Store.get(key);
+  showPopup(`
+    <div class="popup-title"><i class="k-topic"></i>#${escapeHtml(t.name)}</div>
+    <div class="section-label">Connections</div>
+    ${connectionsHtml(key)}
+    <div class="row">
+      <button class="btn primary small" data-act="link">⛓ Link…</button>
+      <button class="btn ghost small" data-act="rename">Rename</button>
+      <button class="btn danger small" data-act="remove">Delete</button>
+    </div>`, rect, {
+    ...connectionActions,
+    link: () => startLink(key),
+    rename: async () => {
+      hidePopup();
+      const name = await ask('Rename topic', t.name);
+      if (name) Store.rename(key, name);
+    },
+    remove: () => { hidePopup(); Store.remove(key); },
+  });
+}
+
+// Resolves to the entered text (or true for a confirmation), or null when cancelled.
+function ask(title, value = '', { confirm = false } = {}) {
+  const modal = $('#modal');
+  modal.innerHTML = `
+    <form class="modal-card">
+      <div class="popup-title">${escapeHtml(title)}</div>
+      ${confirm ? '' : `<input class="input" value="${escapeHtml(value)}">`}
+      <div class="row end">
+        <button type="button" class="btn ghost small">Cancel</button>
+        <button class="btn ${confirm ? 'danger' : 'primary'} small">${confirm ? 'Delete' : 'OK'}</button>
+      </div>
+    </form>`;
+  modal.hidden = false;
+  const input = modal.querySelector('input');
+  input?.focus();
+  input?.select();
+  return new Promise((resolve) => {
+    const done = (v) => { modal.hidden = true; resolve(v); };
+    modal.querySelector('form').onsubmit = (e) => { e.preventDefault(); done(confirm || input.value.trim()); };
+    modal.querySelector('button[type=button]').onclick = () => done(null);
+    modal.onmousedown = (e) => e.target === modal && done(null);
+  });
+}
+
