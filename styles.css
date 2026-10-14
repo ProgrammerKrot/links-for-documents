@@ -497,3 +497,64 @@ i[class^="k-"] { display: inline-block; width: 9px; height: 9px; border-radius: 
 .splitter::after { content: ''; position: absolute; inset: 0 -3px; }
 .splitter:hover, body.resizing .splitter { background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
+.graph-panel {
+  width: 34%; min-width: 260px; flex: none;
+  display: flex; flex-direction: column;
+  background: var(--g-bg);
+  position: relative;
+  border-top: 1px solid var(--line);
+}
+.graph-toolbar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 10px 0 16px; }
+.graph-title { font-weight: 500; font-size: 14px; }
+.toggle { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-2); cursor: pointer; }
+.toggle input { accent-color: var(--accent); }
+.graph-wrap { flex: 1; position: relative; min-height: 0; }
+.graph-wrap canvas { position: absolute; inset: 0; cursor: grab; touch-action: none; }
+.legend { position: absolute; left: 16px; bottom: 12px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--text-2); pointer-events: none; }
+.legend span { display: flex; align-items: center; }
+.legend .doc-icon { margin-right: 5px; }
+
+.graph-tip {
+  position: absolute; z-index: 5; max-width: 260px;
+  background: var(--bg); border-radius: 6px;
+  box-shadow: var(--shadow-menu);
+  padding: 8px 10px; pointer-events: none; font-size: 13px;
+}
+.graph-tip > * + * { margin-top: 4px; }
+
+/* ============ Menus / popups / modal ============ */
+.popup, .modal-card {
+  background: var(--bg);
+  border-radius: 6px;
+  box-shadow: var(--shadow-menu);
+  padding: 8px;
+}
+.popup { position: fixed; z-index: 20; min-width: 220px; max-width: 340px; animation: popIn .12s ease-out; }
+.popup > * + * { margin-top: 8px; }
+@keyframes popIn { from { transform: translateY(3px); opacity: 0; } }
+.popup-title { font-weight: 600; display: flex; align-items: center; padding: 2px 4px; }
+.popup .section-label { margin: 10px 4px 2px; }
+.quote {
+  border-left: 3px solid var(--c, var(--text));
+  padding: 2px 10px; font-size: 14px;
+  background: color-mix(in srgb, var(--c, transparent) 14%, transparent);
+  border-radius: 0 3px 3px 0;
+}
+.swatch {
+  width: 22px; height: 22px; border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--c) 45%, var(--bg));
+  cursor: pointer; padding: 0;
+}
+.swatch:hover { transform: scale(1.1); }
+.swatch.on { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+.conn-list { list-style: none; margin: 0; padding: 0; max-height: 180px; overflow-y: auto; }
+.conn-list li { display: flex; align-items: center; }
+.link-to {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: transparent; cursor: pointer;
+  padding: 4px 6px; border-radius: 4px; font-size: 14px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.link-to:hover { background: var(--bg-hover); }
+.unlink { width: 24px; height: 24px; font-size: 12px; }
+
