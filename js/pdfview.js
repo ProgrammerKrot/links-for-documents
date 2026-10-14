@@ -155,3 +155,33 @@ const PdfView = (() => {
     timers.set(key, setTimeout(() => paint(docId, i, width), cached ? 200 : 0));
   }
 
+  async function paint(docId, i, width) {
+    const d = docs.get(docId);
+    const page = await d.pdf.getPage(i + 1);
+    const vp = page.getViewport({ scale: width / d.pages[i].w });
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(vp.width);
+    canvas.height = Math.round(vp.height);
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+    const sheet = mounted.get(docId)[i];
+    if (!visible.has(sheet)) return;
+    canvases.get(`${docId}:${i}`)?.canvas.remove();
+    canvases.set(`${docId}:${i}`, { canvas, width });
+    sheet.querySelector('canvas')?.remove();
+    sheet.prepend(canvas);
+  }
+
+  function drop(sheet) {
+    const { docId, i } = sheetInfo.get(sheet);
+    const key = `${docId}:${i}`;
+    clearTimeout(timers.get(key));
+    const cached = canvases.get(key);
+    if (cached?.canvas.parentNode !== sheet) return;
+    cached.canvas.remove();
+    cached.canvas.width = 0; // release the bitmap now rather than on GC
+    canvases.delete(key);
+  }
+
+  return { status, ensure, build };
+})();
