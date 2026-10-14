@@ -34,3 +34,47 @@ Folders force every note into exactly one place. Links let a note live in many c
 
 Over time, a dense web of links becomes more valuable than any single note. Clusters appear around topics you keep returning to, and gaps show where your understanding is thin.
 
+## Resurfacing
+
+Capture is easy; the hard part is seeing old notes again at the right moment. Periodic review, search, and graph views all help bring forgotten ideas back into view.
+
+Write notes in your own words. Paraphrasing is a small act of retrieval and makes the note far more useful when you come back to it.`,
+    },
+    {
+      name: 'The Forgetting Curve',
+      kind: 'txt',
+      content: `The Forgetting Curve
+
+In the 1880s Hermann Ebbinghaus memorised lists of nonsense syllables and measured how much he could recall after different delays. He found that most forgetting happens within the first day, after which the rate of loss slows down.
+
+He also noticed that each time he relearned a list, it was forgotten more slowly than before. Repetition did not just restore the memory; it made it more durable.
+
+These two observations, rapid early decay and slower decay after each review, are the foundation that modern spaced repetition software is built on.`,
+    },
+  ];
+
+  const ids = docs.map((d) => Store.addDoc(d.name, d.content, d.kind));
+  const hl = (doc, phrase, color) => {
+    const start = Reader.plainText(doc).indexOf(phrase);
+    return Store.addHighlight(doc.id, start, start + phrase.length, color, phrase);
+  };
+  const [sr, sb, fc] = ids;
+
+  const h1 = hl(sr, 'the forgetting curve', '#f5d76e');
+  const h2 = hl(sr, 'Retrieval itself strengthens memory', '#7ee08a');
+  const h3 = hl(sb, 'Links let a note live in many contexts at once', '#6ec6f5');
+  const h4 = hl(sb, 'Paraphrasing is a small act of retrieval', '#7ee08a');
+  const h5 = hl(fc, 'most forgetting happens within the first day', '#f5d76e');
+  hl(sb, 'Periodic review', '#f58ec2');
+
+  const memory = Store.addTopic('memory');
+  Store.addLink(`hl:${h1.id}`, `hl:${h5.id}`);
+  Store.addLink(`hl:${h2.id}`, `hl:${h4.id}`);
+  Store.addLink(`hl:${h1.id}`, `doc:${fc.id}`);
+  Store.addLink(`topic:${memory.id}`, `hl:${h2.id}`);
+  Store.addLink(`topic:${memory.id}`, `doc:${fc.id}`);
+  Store.addLink(`topic:${memory.id}`, `hl:${h3.id}`);
+
+  Reader.open(sr.id);
+  Reader.open(fc.id);
+}
