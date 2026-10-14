@@ -403,3 +403,60 @@ i[class^="k-"] { display: inline-block; width: 9px; height: 9px; border-radius: 
 .doc-body.doc-loading { min-height: 240px; display: grid; place-items: center; }
 .doc-body.doc-loading::after { content: attr(data-loading); color: var(--text-3); font-size: 14px; }
 
+/* image documents */
+.doc-body.imageview { background: var(--bg-page); margin: 0 -28px; padding: 24px 28px; border-radius: 8px; }
+.img-sheet { position: relative; width: fit-content; max-width: 100%; margin: 0 auto; box-shadow: var(--shadow-sheet); cursor: crosshair; line-height: 0; }
+.img-sheet img { display: block; max-width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+
+/* ============ Areas (rectangles on PDF pages and images) ============ */
+.area {
+  position: absolute; z-index: 2;
+  border: 2px solid var(--c);
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+}
+.area:hover { background: color-mix(in srgb, var(--c) 30%, transparent); }
+.area.linked::after {
+  content: '⛓'; position: absolute; top: -10px; right: -10px;
+  width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 11px; line-height: 1; color: #fff; background: var(--link);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25);
+}
+.area.pending { box-shadow: 0 0 0 3px var(--link); animation: pendingGlow 1.2s infinite alternate; outline: 2px solid var(--link); outline-offset: 2px; }
+.area.flash { animation: areaFlash 1.4s ease-out; }
+@keyframes areaFlash { 0%, 35% { background: color-mix(in srgb, var(--c) 60%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 40%, transparent); } }
+.area.ghost {
+  border: 2px dashed var(--accent); background: var(--accent-soft);
+  pointer-events: none; cursor: crosshair;
+}
+.pane.drawing .pdf-sheet { cursor: crosshair; }
+.pane.drawing .text-layer { pointer-events: none; }
+.area-tool.on { color: var(--accent); background: var(--accent-soft); }
+
+.area-preview { display: grid; gap: 6px; }
+.area-preview img, .area-preview .no-thumb {
+  max-width: 100%; max-height: 160px; justify-self: start;
+  border: 2px solid var(--c); border-radius: 4px; background: #fff;
+}
+.area-preview .no-thumb { width: 64px; height: 44px; display: grid; place-items: center; color: var(--c); font-size: 22px; }
+.area-preview span { font-size: 13px; color: var(--text-2); }
+
+/* ============ Highlights ============ */
+.hl {
+  background: color-mix(in srgb, var(--c) var(--hl-mix), transparent);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background .15s;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.hl:hover { background: color-mix(in srgb, var(--c) 55%, transparent); }
+.hl.linked { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--link) 70%, transparent); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.hl.pending { outline: 2px solid var(--link); outline-offset: 1px; animation: pendingGlow 1.2s infinite alternate; }
+@keyframes pendingGlow { to { outline-color: transparent; } }
+.hl.flash { animation: hlFlash 1.4s ease-out; }
+@keyframes hlFlash { 0%, 35% { background: color-mix(in srgb, var(--c) 90%, transparent); } }
+
