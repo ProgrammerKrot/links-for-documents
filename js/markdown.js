@@ -93,3 +93,38 @@ const Markdown = (() => {
     return out.join('\n');
   }
 
+  function list(lines, start) {
+    const first = lines[start].match(listItem);
+    const indent = first[1].length;
+    const ordered = /\d/.test(first[2]);
+    const items = [];
+    let i = start;
+    while (i < lines.length) {
+      const m = lines[i].match(listItem);
+      if (!m || m[1].length < indent) {
+        // lazy continuation line of the previous item
+        if (!m && lines[i].trim() && items.length && /^\s+/.test(lines[i])) { items[items.length - 1].text += ' ' + lines[i].trim(); i++; continue; }
+        break;
+      }
+      if (m[1].length > indent) {
+        const [html, next] = list(lines, i);
+        items[items.length - 1].children += html;
+        i = next;
+        continue;
+      }
+      items.push({ text: m[3], children: '' });
+      i++;
+    }
+    const tag = ordered ? 'ol' : 'ul';
+    const html = items.map((it) => {
+      const task = it.text.match(/^\[([ xX])\]\s+(.*)$/);
+      const body = task
+        ? `<input type="checkbox" disabled${task[1] !== ' ' ? ' checked' : ''}> ${inline(task[2])}`
+        : inline(it.text);
+      return `<li${task ? ' class="task"' : ''}>${body}${it.children}</li>`;
+    }).join('\n');
+    return [`<${tag}>\n${html}\n</${tag}>`, i];
+  }
+
+  return { render };
+})();
