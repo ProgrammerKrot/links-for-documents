@@ -55,3 +55,54 @@ const Store = (() => {
   let base = {};
   let fileBroken = false;
 
+  async function loadLinksFile() {
+    let res;
+    try { res = await fetch('/api/links', { cache: 'no-store' }); } catch { return setFileStatus('off'); }
+    if (res.status === 404) { // create it
+      version = 'none';
+      setFileStatus('saved');
+      setInterval(pollLinksFile, 3000);
+      return scheduleFileWrite(0);
+    }
+    if (!res.ok) return setFileStatus('off');
+    try {
+      const data = await res.json();
+      applyLinksFile(data);
+      [version, base] = [res.headers.get('X-Version'), data];
+      setFileStatus('saved');
+      setInterval(pollLinksFile, 3000);
+    } catch (err) {
+      console.warn('links.tr is not readable, leaving it untouched', err);
+      setFileStatus('error');
+      fileBroken = true;
+    }
+  }
+
+  // Picks up changes made in another window or by hand, when we have none of our own pending.
+  async function pollLinksFile() {
+    if (fileBroken || writing || fileTimer) return;
+    const res = await fetch('/api/links', { cache: 'no-store', headers: { 'X-Known-Version': version ?? '' } }).catch(() => null);
+    if (res?.status !== 200) return;
+    const data = await res.json().catch(() => null);
+    if (!data || writing || fileTimer) return; // a local change came in meanwhile; its write will merge
+    applyLinksFile(data);
+    [version, base] = [res.headers.get('X-Version'), data];
+    notify('sync');
+  }
+
+  // Three-way merge by id: what we added, changed or deleted since `base` is applied on top of
+  // `theirs`. Readable from/to fields on links don't count as changes.
+  function merge(baseData, mine, theirs) {
+    const core = ({ from, to, ...rest }) => JSON.stringify(rest);
+    const out = { ...mine };
+    for (const col of ['documents', 'topics', 'highlights', 'links']) {
+      const before = new Map((baseData[col] ?? []).map((x) => [x.id, x]));
+      const now = new Map(mine[col].map((x) => [x.id, x]));
+      const result = new Map((theirs[col] ?? []).map((x) => [x.id, x]));
+      for (const [id, x] of now) if (!before.has(id) || core(before.get(id)) !== core(x)) result.set(id, x);
+      for (const id of before.keys()) if (!now.has(id)) result.delete(id);
+      out[col] = [...result.values()];
+    }
+    return out;
+  }
+
