@@ -91,3 +91,61 @@
   color-scheme: dark;
 }
 
+/* ============ Base ============ */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+body.resizing { cursor: col-resize; user-select: none; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+.muted { color: var(--text-2); }
+.small { font-size: 12px; }
+.spacer { flex: 1; }
+.row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.row.center { justify-content: center; }
+.row.end { justify-content: flex-end; }
+
+/* ============ Buttons ============ */
+.btn {
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  padding: 0 10px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 14px;
+  transition: background .1s;
+}
+.btn:hover { background: var(--bg-hover); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500; }
+.btn.primary:hover { background: #0077d4; }
+.btn.ghost { border-color: transparent; color: var(--text-2); }
+.btn.ghost:hover { color: var(--text); }
+.btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+.btn.danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
+.btn.small { height: 26px; padding: 0 8px; font-size: 13px; }
+.btn.wide { width: 100%; margin-top: 6px; }
+
+.icon-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  font-size: 14px;
+  transition: background .1s;
+}
+.icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+
