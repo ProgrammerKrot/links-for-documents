@@ -2,6 +2,13 @@
 
 Upload documents, highlight passages, and link highlights, whole documents and topics into a graph — like Obsidian's graph view, but for the documents you read.
 
+<img width="2111" height="847" alt="image" src="https://github.com/user-attachments/assets/b2b36785-60ae-4eb5-aef0-b8f4c9c283a0" />
+
+
+<img width="1280" height="637" alt="image" src="https://github.com/user-attachments/assets/b62869b5-4f44-4316-8bad-6b1bfe89b809" />
+
+
+
 ## Run
 
 Needs [Node.js](https://nodejs.org) (no other dependencies, no build step).
