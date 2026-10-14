@@ -97,3 +97,44 @@ class ForceGraph {
     this.viewTarget = { x: -k * (minX + maxX) / 2, y: -k * (minY + maxY) / 2, k };
   }
 
+  tick() {
+    if (this.alpha < 0.003) return;
+    const a = this.alpha;
+    const ns = [...this.nodes.values()];
+    const charge = (n) => (n.kind === 'hl' ? 0.35 : 1);
+
+    for (let i = 0; i < ns.length; i++) {
+      const p = ns[i];
+      for (let j = i + 1; j < ns.length; j++) {
+        const q = ns[j];
+        let dx = q.x - p.x, dy = q.y - p.y;
+        let d2 = dx * dx + dy * dy;
+        if (d2 > 360000) continue;
+        if (d2 < 1) { dx = Math.random() - 0.5; dy = Math.random() - 0.5; d2 = 1; }
+        const d = Math.sqrt(d2);
+        const fx = (dx / d) * (4200 * a) / d2, fy = (dy / d) * (4200 * a) / d2;
+        p.vx -= fx * charge(q); p.vy -= fy * charge(q);
+        q.vx += fx * charge(p); q.vy += fy * charge(p);
+      }
+    }
+
+    for (const e of this.edges) {
+      const p = this.nodes.get(e.a), q = this.nodes.get(e.b);
+      const dx = q.x - p.x, dy = q.y - p.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const [len, k] = e.kind === 'contains' ? [42, 0.12] : [150, 0.04];
+      const f = ((d - len) * k * a) / d;
+      p.vx += dx * f; p.vy += dy * f;
+      q.vx -= dx * f; q.vy -= dy * f;
+    }
+
+    for (const n of ns) {
+      if (n === this.drag?.node) { n.vx = n.vy = 0; continue; }
+      n.vx = (n.vx - n.x * 0.008 * a) * 0.62;
+      n.vy = (n.vy - n.y * 0.008 * a) * 0.62;
+      n.x += n.vx;
+      n.y += n.vy;
+    }
+    this.alpha *= 0.993;
+  }
+
